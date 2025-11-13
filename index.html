@@ -226,6 +226,51 @@ Tracy Whitnel Elementary	9/27/2024	0	0
 UNC Charlotte	9/28/2024	20	0
 Corvian Community School	9/30/2024	40	0
 Salem Baptist Christian School	9/30/2024	49	0
+Corvian Community Elementary	10/1/2024	112	0
+North Springs Elementary	10/2/2024	44	0
+China Grove Elementary	10/4/2024	132	0
+STEM Skool	10/4/2024	92	0
+Voices in the laurel	10/4/2024	0	0
+West Lake Preparatory Academy	10/4/2024	0	0
+Adventist Christian Academy of Charlotte	10/8/2024	19	0
+Fallston Elementary	10/8/2024	93	0
+Lawrence Orr Elementary School	10/8/2024	0	0
+Mallard Creek Elementary School	10/9/2024	0	0
+Cayce Elementary School	10/10/2024	118	0
+Springfield Elementary School	10/10/2024	0	0
+Fallston Elementary	10/11/2024	0	0
+Tracy Whitnel Elementary	10/11/2024	37	0
+West Lake Preparatory Academy	10/11/2024	0	0
+British International School of Charlotte	10/14/2024	36	0
+Gaston College	10/15/2024	20	0
+Jackson Day School	10/15/2024	0	0
+Darlington Middle School	10/17/2024	116	0
+Richfield Elementary School	10/17/2024	78	0
+The John Crosland School	10/17/2024	19	0
+William S. Sandel Elementary School	10/17/2024	0	0
+Amber Amber	10/18/2024	0	0
+Friendship Day School	10/18/2024	49	0
+Hollow Springs Motlow Elementary	10/18/2024	0	0
+North Rowan Salisbury	10/18/2024	0	0
+Weddington Hills Elementary	10/21/2024	0	0
+South Kilbourne Elementary	10/22/2024	0	0
+St Patrick Elementary	10/22/2024	0	0
+Weddington Hills Elementary	10/22/2024	0	0
+Gaston Day School	10/23/2024	36	0
+Pageland Elementary School	10/23/2024	101	0
+Charlotte Holliday	10/24/2024	81	1
+Community Christian Academy	10/24/2024	0	0
+Hickory Grove Elementary School	10/25/2024	0	0
+High Point Christian Academy	10/25/2024	79	0
+St. Gabriel Catholic School	10/25/2024	150	0
+Belmont Central Elementary	10/29/2024	86	0
+Union Prep Academy - Indian Trail	10/29/2024	110	0
+Belmont Central Elementary	10/30/2024	112	0
+Lancaster Area Homeschoolers	10/30/2024	31	0
+Legette Blythe Elementary	10/30/2024	0	0
+St Patrick Elementary	10/30/2024	40	0
+Lawrence Orr Elementary School	10/31/2024	26	0
+Union Prep Academy - Indian Trail	10/31/2024	110	0
 ACE Academy Charter	11/1/2024	38	0
 Haw Creek Elementary	11/1/2024	0	0
 Highland Creek Elementary	11/1/2024	75	0
@@ -315,51 +360,6 @@ Farmer Elementary School	11/8/2024	40	0
 Jessica Westby	11/8/2024	1	0
 Kayla McArthur	11/8/2024	1	0
 Langtree Charter Academy	11/8/2024	0	0
-Corvian Community Elementary	10/1/2024	112	0
-North Springs Elementary	10/2/2024	44	0
-China Grove Elementary	10/4/2024	132	0
-STEM Skool	10/4/2024	92	0
-Voices in the laurel	10/4/2024	0	0
-West Lake Preparatory Academy	10/4/2024	0	0
-Adventist Christian Academy of Charlotte	10/8/2024	19	0
-Fallston Elementary	10/8/2024	93	0
-Lawrence Orr Elementary School	10/8/2024	0	0
-Mallard Creek Elementary School	10/9/2024	0	0
-Cayce Elementary School	10/10/2024	118	0
-Springfield Elementary School	10/10/2024	0	0
-Fallston Elementary	10/11/2024	0	0
-Tracy Whitnel Elementary	10/11/2024	37	0
-West Lake Preparatory Academy	10/11/2024	0	0
-British International School of Charlotte	10/14/2024	36	0
-Gaston College	10/15/2024	20	0
-Jackson Day School	10/15/2024	0	0
-Darlington Middle School	10/17/2024	116	0
-Richfield Elementary School	10/17/2024	78	0
-The John Crosland School	10/17/2024	19	0
-William S. Sandel Elementary School	10/17/2024	0	0
-Amber Amber	10/18/2024	0	0
-Friendship Day School	10/18/2024	49	0
-Hollow Springs Motlow Elementary	10/18/2024	0	0
-North Rowan Salisbury	10/18/2024	0	0
-Weddington Hills Elementary	10/21/2024	0	0
-South Kilbourne Elementary	10/22/2024	0	0
-St Patrick Elementary	10/22/2024	0	0
-Weddington Hills Elementary	10/22/2024	0	0
-Gaston Day School	10/23/2024	36	0
-Pageland Elementary School	10/23/2024	101	0
-Charlotte Holliday	10/24/2024	81	1
-Community Christian Academy	10/24/2024	0	0
-Hickory Grove Elementary School	10/25/2024	0	0
-High Point Christian Academy	10/25/2024	79	0
-St. Gabriel Catholic School	10/25/2024	150	0
-Belmont Central Elementary	10/29/2024	86	0
-Union Prep Academy - Indian Trail	10/29/2024	110	0
-Belmont Central Elementary	10/30/2024	112	0
-Lancaster Area Homeschoolers	10/30/2024	31	0
-Legette Blythe Elementary	10/30/2024	0	0
-St Patrick Elementary	10/30/2024	40	0
-Lawrence Orr Elementary School	10/31/2024	26	0
-Union Prep Academy - Indian Trail	10/31/2024	110	0
 Leigh Ann Trent	11/8/2024	2	0
 Lela Sample	11/8/2024	1	0
 Michael Stevens	11/8/2024	1	0
@@ -1966,6 +1966,17 @@ Metrolina Christian Academy Summer Day Camp	6/30/2025	0	0
             });
             const monthlyData = Object.values(months).sort((a, b) => a.sortKey.localeCompare(b.sortKey));
 
+            // Daily data
+            const dailyMap = {};
+            records.forEach(record => {
+                const dayKey = record.dateStr;
+                if (!dailyMap[dayKey]) {
+                    dailyMap[dayKey] = { date: dayKey, guests: 0 };
+                }
+                dailyMap[dayKey].guests += record.totalQuantity;
+            });
+            const dailyData = Object.values(dailyMap).sort((a, b) => a.date.localeCompare(b.date));
+
             // Day of week data
             const days = { Monday: 0, Tuesday: 0, Wednesday: 0, Thursday: 0, Friday: 0, Saturday: 0, Sunday: 0 };
             const dayGroups = { Monday: 0, Tuesday: 0, Wednesday: 0, Thursday: 0, Friday: 0, Saturday: 0, Sunday: 0 };
@@ -2016,6 +2027,7 @@ Metrolina Christian Academy Summer Day Camp	6/30/2025	0	0
                 uniqueGroups: groupBreakdown.length,
                 groupBreakdown,
                 monthlyData,
+                dailyData,
                 dayOfWeekData,
                 insights: {
                     peakMonth1: peakMonth1[0],
@@ -2121,6 +2133,12 @@ Metrolina Christian Academy Summer Day Camp	6/30/2025	0	0
                         <div id="monthly-chart"></div>
                     </div>
 
+                    <div class="card">
+                        <h2>Daily Activity Pattern</h2>
+                        <p class="subtitle" style="margin-bottom: 16px;">Complete FY25 daily activity</p>
+                        <div id="daily-chart"></div>
+                    </div>
+
                     <div class="grid-2">
                         <div class="card">
                             <h2>Most Popular Days - Guests</h2>
@@ -2146,6 +2164,7 @@ Metrolina Christian Academy Summer Day Camp	6/30/2025	0	0
             `;
 
             drawLineChart('monthly-chart', d.monthlyData, 'month', 'guests', '#2563eb');
+            drawDailyChart('daily-chart', d.dailyData, 'date', 'guests', '#ff8042');
             drawBarChart('day-guests-chart', d.dayOfWeekData, 'day', 'guests', '#8884d8');
             drawBarChart('day-groups-chart', d.dayOfWeekData, 'day', 'groups', '#82ca9d');
             drawHorizontalBarChart('top-groups-chart', d.groupBreakdown.slice(0, 10), 'name', 'totalGuests', '#3b82f6');
@@ -2202,6 +2221,68 @@ Metrolina Christian Academy Summer Day Camp	6/30/2025	0	0
                         <path d="${pathD}" fill="none" stroke="${color}" stroke-width="2"/>
                         ${data.map((d, i) => `
                             <circle cx="${i * scaleX}" cy="${chartHeight - (d[yKey] * scaleY)}" r="4" fill="${color}">
+                                <title>${d[xKey]}: ${d[yKey].toLocaleString()}</title>
+                            </circle>
+                        `).join('')}
+                    </g>
+                </svg>
+            `;
+        }
+
+        function drawDailyChart(containerId, data, xKey, yKey, color) {
+            const container = document.getElementById(containerId);
+            const width = container.clientWidth;
+            const height = 300;
+            const margin = { top: 20, right: 20, bottom: 60, left: 60 };
+            const chartWidth = width - margin.left - margin.right;
+            const chartHeight = height - margin.top - margin.bottom;
+
+            // Fixed max at 1200
+            const maxY = 1200;
+            
+            const scaleY = chartHeight / maxY;
+            const scaleX = chartWidth / (data.length - 1);
+
+            // Y-axis in increments of 200
+            const yStep = 200;
+            const yAxisSteps = Math.floor(maxY / yStep);
+
+            let pathD = '';
+            data.forEach((d, i) => {
+                const x = i * scaleX;
+                const y = chartHeight - (d[yKey] * scaleY);
+                pathD += (i === 0 ? 'M' : 'L') + ` ${x} ${y}`;
+            });
+
+            // Generate grid lines and Y-axis labels
+            let gridLines = '';
+            let yAxisLabels = '';
+            for (let i = 0; i <= yAxisSteps; i++) {
+                const value = i * yStep;
+                const y = chartHeight - (value * scaleY);
+                gridLines += `<line x1="0" y1="${y}" x2="${chartWidth}" y2="${y}" stroke="#e5e7eb" stroke-width="1"/>`;
+                yAxisLabels += `<text x="-10" y="${y + 4}" text-anchor="end" class="axis-label">${value.toLocaleString()}</text>`;
+            }
+
+            // Sample dates for X-axis (show every 15th day to avoid crowding)
+            const dateLabels = data
+                .filter((d, i) => i % 15 === 0 || i === data.length - 1)
+                .map((d, idx) => {
+                    const actualIndex = data.indexOf(d);
+                    const x = actualIndex * scaleX;
+                    return `<text x="${x}" y="${chartHeight + 20}" text-anchor="middle" class="axis-label" transform="rotate(-45, ${x}, ${chartHeight + 20})">${d[xKey]}</text>`;
+                })
+                .join('');
+
+            container.innerHTML = `
+                <svg width="${width}" height="${height}">
+                    <g transform="translate(${margin.left}, ${margin.top})">
+                        ${gridLines}
+                        ${yAxisLabels}
+                        ${dateLabels}
+                        <path d="${pathD}" fill="none" stroke="${color}" stroke-width="2"/>
+                        ${data.map((d, i) => `
+                            <circle cx="${i * scaleX}" cy="${chartHeight - (d[yKey] * scaleY)}" r="3" fill="${color}">
                                 <title>${d[xKey]}: ${d[yKey].toLocaleString()}</title>
                             </circle>
                         `).join('')}
@@ -2301,4 +2382,3 @@ Metrolina Christian Academy Summer Day Camp	6/30/2025	0	0
     </script>
 </body>
 </html>
-
