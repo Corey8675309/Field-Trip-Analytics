@@ -2180,7 +2180,7 @@ Metrolina Christian Academy Summer Day Camp	6/30/2025	0	0
             const container = document.getElementById(containerId);
             const width = container.clientWidth;
             const height = 400;
-            const margin = { top: 20, right: 20, bottom: 20, left: 150 };
+            const margin = { top: 20, right: 20, bottom: 20, left: 200 };
             const chartWidth = width - margin.left - margin.right;
             const chartHeight = height - margin.top - margin.bottom;
 
@@ -2194,12 +2194,11 @@ Metrolina Christian Academy Summer Day Camp	6/30/2025	0	0
                         ${data.map((d, i) => {
                             const barWidth = d[valueKey] * scaleX;
                             const y = i * (chartHeight / data.length);
-                            const label = d[labelKey].length > 20 ? d[labelKey].substring(0, 18) + '...' : d[labelKey];
                             return `
                                 <rect class="bar" x="0" y="${y}" width="${barWidth}" height="${barHeight}" fill="${color}">
                                     <title>${d[labelKey]}: ${d[valueKey].toLocaleString()}</title>
                                 </rect>
-                                <text x="-5" y="${y + barHeight / 2 + 4}" text-anchor="end" class="axis-label" style="font-size: 11px;">${label}</text>
+                                <text x="-5" y="${y + barHeight / 2 + 4}" text-anchor="end" class="axis-label" style="font-size: 10px;">${d[labelKey]}</text>
                             `;
                         }).join('')}
                     </g>
