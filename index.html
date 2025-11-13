@@ -1828,9 +1828,41 @@ Metrolina Christian Academy Summer Day Camp	6/30/2025	0	0
             const lines = csvText.trim().split('\n').slice(1);
             
             const records = lines.map(line => {
-                const match = line.match(/"([^"]+)",(\d{4}-\d{2}-\d{2}),(-?\d+),(-?\d+)/);
-                if (!match) return null;
+                // Try quoted format first
+                let match = line.match(/"([^"]+)",(\d{4}-\d{2}-\d{2}),(-?\d+),(-?\d+)/);
                 
+                // If no match, try space-separated format with M/D/YYYY dates
+                if (!match) {
+                    const parts = line.trim().split(/\s+/);
+                    if (parts.length < 4) return null;
+                    
+                    // Last two are quantities, second to last is date
+                    const heldQty = parts[parts.length - 1];
+                    const qty = parts[parts.length - 2];
+                    const dateStr = parts[parts.length - 3];
+                    const name = parts.slice(0, parts.length - 3).join(' ');
+                    
+                    // Parse M/D/YYYY format
+                    const dateParts = dateStr.split('/');
+                    if (dateParts.length !== 3) return null;
+                    
+                    const month = dateParts[0].padStart(2, '0');
+                    const day = dateParts[1].padStart(2, '0');
+                    const year = dateParts[2];
+                    const isoDate = `${year}-${month}-${day}`;
+                    
+                    const totalQty = parseInt(qty) + parseInt(heldQty);
+                    const date = new Date(Date.UTC(parseInt(year), parseInt(month) - 1, parseInt(day)));
+                    
+                    return {
+                        name: name.trim(),
+                        date: date,
+                        dateStr: isoDate,
+                        totalQuantity: totalQty
+                    };
+                }
+                
+                // Original quoted format
                 const [, name, dateStr, qty, heldQty] = match;
                 const totalQty = parseInt(qty) + parseInt(heldQty);
                 
