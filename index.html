@@ -4,441 +4,2204 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Field Trip Analytics Dashboard</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f9fafb; }
+        .container { max-width: 1280px; margin: 0 auto; padding: 24px; }
+        .card { background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); padding: 24px; margin-bottom: 24px; }
+        .header { margin-bottom: 8px; }
+        h1 { font-size: 30px; font-weight: bold; color: #111827; margin-bottom: 8px; }
+        h2 { font-size: 20px; font-weight: bold; color: #111827; margin-bottom: 16px; }
+        h3 { font-size: 18px; font-weight: 600; margin-bottom: 8px; }
+        .subtitle { color: #6b7280; font-size: 14px; }
+        .grid-4 { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
+        .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 24px; margin-bottom: 24px; }
+        .metric-card { background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); padding: 24px; display: flex; justify-content: space-between; align-items: center; }
+        .metric-label { font-size: 14px; color: #6b7280; margin-bottom: 4px; }
+        .metric-value { font-size: 30px; font-weight: bold; }
+        .blue { color: #2563eb; }
+        .indigo { color: #4f46e5; }
+        .green { color: #16a34a; }
+        .orange { color: #ea580c; }
+        .icon { opacity: 0.2; width: 48px; height: 48px; }
+        .insight-box { border-radius: 8px; padding: 20px; margin-bottom: 16px; }
+        .insight-blue { background: #eff6ff; }
+        .insight-green { background: #f0fdf4; }
+        .insight-amber { background: #fffbeb; }
+        .insight-title { font-weight: 600; color: #1e40af; margin-bottom: 8px; }
+        .insight-green .insight-title { color: #166534; }
+        .insight-amber .insight-title { color: #92400e; }
+        .insight-text { color: #374151; line-height: 1.6; }
+        .quarter-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 16px; margin-top: 24px; }
+        .quarter-box { background: #f9fafb; border-radius: 8px; padding: 16px; text-align: center; }
+        .quarter-label { font-size: 14px; color: #6b7280; margin-bottom: 4px; }
+        .quarter-value { font-size: 24px; font-weight: bold; color: #111827; margin-bottom: 4px; }
+        .quarter-percent { font-size: 12px; color: #6b7280; }
+        .upload-box { text-align: center; background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); padding: 48px; max-width: 500px; margin: 100px auto; }
+        .upload-title { font-size: 24px; font-weight: bold; color: #111827; margin-bottom: 16px; }
+        .upload-text { color: #6b7280; margin-bottom: 24px; }
+        input[type="file"] { display: block; width: 100%; padding: 12px; border: 2px dashed #d1d5db; border-radius: 8px; cursor: pointer; font-size: 14px; }
+        input[type="file"]:hover { border-color: #2563eb; }
+        .chart-container { width: 100%; height: 300px; margin-top: 16px; }
+        .bar { transition: opacity 0.2s; }
+        .bar:hover { opacity: 0.8; }
+        svg { overflow: visible; }
+        .axis-label { font-size: 12px; fill: #6b7280; }
+        .chart-title { font-size: 16px; font-weight: 600; color: #111827; margin-bottom: 16px; }
+        .error { color: #dc2626; margin-top: 16px; font-size: 14px; }
+    </style>
 </head>
 <body>
     <div id="root"></div>
-    
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/recharts@2.5.0/dist/Recharts.js"></script>
-    <script src="https://unpkg.com/lucide@0.263.1/dist/umd/lucide.min.js"></script>
-    
+
     <script>
-        (function() {
-            // Poll until all libraries are loaded
-            function checkLibraries() {
-                if (typeof React === 'undefined' || 
-                    typeof ReactDOM === 'undefined' || 
-                    typeof Recharts === 'undefined' || 
-                    typeof lucide === 'undefined') {
-                    setTimeout(checkLibraries, 50);
-                    return;
-                }
+        // ==================== PASTE YOUR CSV DATA BELOW ====================
+        // Replace this with your actual CSV data (keep the backticks)
+        const EMBEDDED_CSV = `Group name	Date	Quantity	Held Quantity
+Friendship Summer Camp Lashaunna Hicks	7/1/2024	0	0
+Lashauna Hicks	7/1/2024	0	22
+Mecklenburg County Parks and Recreation	7/2/2024	30	0
+Pineville Elementary School	7/2/2024	0	0
+Primrose School of Fort Mill	7/2/2024	22	0
+The Children's Courtyard of Concord	7/2/2024	22	0
+Wonder Academy	7/2/2024	55	0
+First Class Preparatory School	7/3/2024	0	0
+The Children's Courtyard of Concord	7/3/2024	22	0
+North Hills Elementary School	7/5/2024	0	0
+Hope for Harvest Youth Center	7/8/2024	0	0
+Childtime of Monroe	7/9/2024	34	0
+Concord Childrens Academy	7/9/2024	22	0
+Galax Elementary School	7/9/2024	0	20
+Mecklenburg County Parks and Recreation	7/9/2024	0	0
+Smart Kids South Point	7/9/2024	53	0
+Town of Indian Trail Parks and Recreation	7/9/2024	16	0
+YMCA Yreaders at David Cox	7/9/2024	79	0
+Johnson Mini School	7/10/2024	0	0
+University Child Development Center	7/10/2024	18	0
+Galax Elementary School	7/11/2024	0	20
+North Carolina School of Math and Science	7/11/2024	0	0
+Smart Kids #3	7/11/2024	0	0
+YMCA of Greensboro - Ragsdale Family YMCA	7/11/2024	66	0
+Academics Unlimited	7/12/2024	15	0
+Blooming Minds PLLC	7/12/2024	46	0
+Boys and Girls Upstate	7/12/2024	171	0
+Childcare Network #91	7/12/2024	0	0
+First Presbyterian Church CDC	7/12/2024	78	0
+Guilford County Freedom School	7/12/2024	120	0
+Hayes-Taylor YMCA	7/12/2024	0	0
+Winthrop University Eagle Stem Scholars	7/13/2024	20	0
+Childtime of Monroe	7/15/2024	0	0
+Tutor Time	7/15/2024	22	0
+Tutor Time Mint Hill	7/15/2024	3	0
+La Petite Academy Concord	7/16/2024	0	0
+Mecklenburg County Parks and Recreation	7/16/2024	0	0
+Nana's Place	7/16/2024	0	0
+Shamrock Gardens Elementary School	7/16/2024	55	0
+Benedict College	7/17/2024	35	0
+Bethel Baptist Church	7/17/2024	62	0
+First Baptist Church CDC	7/17/2024	0	0
+First Baptist Church of Kernersville, Child Development Center	7/17/2024	20	0
+Giving Tree Child Development Center	7/17/2024	76	0
+Gym Fit Sports Summer Camp	7/17/2024	0	0
+Johnson Mini School	7/17/2024	0	0
+Blue Star Camps	7/18/2024	44	0
+Boys and Girls Club of the Piedmont	7/18/2024	0	0
+Burbee Place	7/18/2024	0	0
+Dixon Academy Northeast	7/18/2024	0	0
+Giving Tree Child Development Center	7/18/2024	0	0
+Incarnation Lutheran CDC	7/18/2024	25	0
+Learning to Lead Accenture	7/18/2024	30	0
+Life Sycle After School Program	7/18/2024	0	0
+Lincoln Charter School	7/18/2024	60	0
+Myers Park Methodist Church	7/18/2024	0	0
+War Memorial Recreation Center	7/18/2024	20	0
+Academy of Spoiled Kids	7/19/2024	45	0
+Boys and Girls Club of Cleveland County	7/19/2024	0	0
+Dream Center Academy	7/19/2024	30	0
+Galax Middle School	7/19/2024	0	0
+God's Word Only Ministries	7/19/2024	0	0
+Mclintock Partners in Education	7/19/2024	39	0
+Mecklenburg County Parks and Recreation	7/19/2024	46	0
+Selma Burke Recreation Center	7/19/2024	0	0
+Student U	7/19/2024	50	0
+Girl Scout Troup 690	7/20/2024	0	0
+LaVon Morrow	7/20/2024	32	0
+Tutor Time Mooresville	7/22/2024	0	0
+Blue Star Camps	7/23/2024	38	0
+Galax Middle School	7/23/2024	44	0
+Tutor Time Mooresville	7/23/2024	0	0
+Carolina School for Inquiry	7/24/2024	35	0
+Westside Community Foundation	7/24/2024	0	0
+Galax Middle School	7/25/2024	0	0
+Innovation Learning	7/25/2024	0	0
+Lake Norman YMCA	7/25/2024	0	0
+Summer Academy for Kids with Autism	7/25/2024	0	0
+Tutor Time Mooresville	7/25/2024	28	0
+Walburg Academy	7/25/2024	36	0
+Young Scholars Enrichment program	7/25/2024	95	0
+Childcare Network #91	7/26/2024	0	0
+Kids Rise Up	7/26/2024	96	0
+Little People's Playhouse	7/26/2024	0	0
+McDowell County Schools (WV)	7/26/2024	0	0
+Rich Tours	7/26/2024	0	0
+Tom Sykes Recreation Center	7/26/2024	41	0
+Tammy Broadaway	7/27/2024	0	0
+Hope for Harvest Youth Center	7/29/2024	0	0
+TIRS Summer Camp	7/29/2024	36	0
+Catawba Indian Nation	7/30/2024	0	0
+Empowerment Academy	7/30/2024	0	0
+Hornets Nest Elementary School	7/30/2024	56	0
+South River Summer Camp	7/30/2024	45	0
+Anson County 4-H	7/31/2024	32	0
+City of Hickory Parks and Rec	7/31/2024	19	0
+Huntersville Parks and Rec	7/31/2024	55	0
+Primrose School of Huntersville	7/31/2024	0	0
+Rich Tours	7/31/2024	21	0
+Catawba Indian Nation	8/1/2024	0	28
+Chesterbrook Academy	8/1/2024	10	0
+Croft Summer Enrichment Program	8/1/2024	60	0
+Empowerment Academy	8/1/2024	0	0
+Huntersville Parks and Rec	8/1/2024	40	0
+Smart Kids #7	8/1/2024	18	0
+The Kick USA Taekwondo	8/1/2024	0	0
+Bobbie Loving	8/3/2024	0	0
+cook literacy model school	8/3/2024	50	0
+La Petite Academy S. Tryon #7469	8/5/2024	28	0
+Bobbie Loving	8/6/2024	56	0
+Dixon Academy Northeast	8/6/2024	28	0
+Pathway Preschool Center	8/6/2024	0	0
+Town of Indian Trail Parks and Recreation	8/6/2024	16	0
+Berewick Rec Center	8/7/2024	45	0
+La Petite Academy Concord	8/7/2024	18	0
+Chesterbrook Weddington	8/8/2024	0	0
+Smart Kids #3	8/8/2024	0	0
+the learning experience	8/8/2024	0	0
+Croft Summer Enrichment Program	8/9/2024	18	0
+Dixon Academy Northeast	8/9/2024	24	0
+Donnally Dixon Academy Northeast	8/9/2024	-24	0
+Arbor Glen Outreach Center	8/12/2024	42	0
+First Presbyterian Church CDC	8/12/2024	19	0
+Donnally Dixon Academy Northeast	8/14/2024	24	0
+First United Methodist Church	8/14/2024	19	0
+Odyssey of the Mind	8/14/2024	32	0
+Chesterbrook Weddington	8/15/2024	23	0
+La Petite Academy S. Tryon #7469	8/15/2024	28	0
+Charlotte Latin School	8/16/2024	25	0
+Nana's Place	8/16/2024	0	0
+Mary Sampson	8/17/2024	0	28
+Mecklenburg County Mary Sampson	8/17/2024	0	-28
+Kidville Kovar	8/20/2024	0	0
+Spartanburg district 2	8/21/2024	0	0
+Betty Rae Thomas Rec Center	8/23/2024	0	0
+Nevins	8/23/2024	26	0
+Siham Wortham	8/24/2024	15	0
+Bridge of Hope Christian School	8/27/2024	25	0
+China Grove Middle	8/29/2024	0	0
+Wilma Stoltzfus	8/31/2024	0	0
+Girl Scout Troop 2110	9/2/2024	15	0
+karie Macdonald	9/6/2024	21	0
+Calvary Day School	9/13/2024	67	0
+Carmen Thompson	9/13/2024	1	0
+Childcare Network #91	9/13/2024	0	0
+Union Academy School of Monroe	9/13/2024	209	0
+Heyward Gibbes Middle School	9/19/2024	83	0
+Koontz Elementary	9/19/2024	0	0
+Anonymous Buyer	9/24/2024	1	0
+Millbridge Elementary	9/24/2024	111	0
+Alec LaFontaine	9/25/2024	1	0
+Cameron Smith	9/25/2024	1	0
+Karlie Lucas	9/25/2024	1	0
+Krysta Salyer	9/25/2024	1	0
+Michael Riddle	9/25/2024	1	0
+Rachael Cook	9/25/2024	1	0
+Riverwalk Academy	9/25/2024	73	0
+Travis Wilson	9/25/2024	1	0
+Aotniina soshnikova	9/26/2024	1	0
+North Springs Elementary	9/26/2024	0	0
+Pine Lake Prepatory	9/26/2024	130	0
+Sedgefield Middle School	9/26/2024	179	0
+Exploris Middle School	9/27/2024	0	0
+John P. Thomas Elementary	9/27/2024	0	0
+Tracy Whitnel Elementary	9/27/2024	0	0
+UNC Charlotte	9/28/2024	20	0
+Corvian Community School	9/30/2024	40	0
+Salem Baptist Christian School	9/30/2024	49	0
+ACE Academy Charter	11/1/2024	38	0
+Haw Creek Elementary	11/1/2024	0	0
+Highland Creek Elementary	11/1/2024	75	0
+Jennifer Jones	11/1/2024	1	0
+Page Street Elementary	11/1/2024	0	0
+Pinnacle Classical Academy	11/1/2024	76	0
+Pragnesh Mistry	11/1/2024	2	0
+Toni Biddix	11/1/2024	1	0
+Tracy RaShan Armstrong	11/1/2024	1	0
+Wingate Park Elementary	11/1/2024	0	138
+Winget Park Elementary School	11/1/2024	0	-138
+Winifred Okosun	11/1/2024	1	0
+Amanda Artale	11/4/2024	1	0
+Amber Hohnke	11/4/2024	1	0
+Angelle Griffin	11/4/2024	1	0
+Brad McMahan	11/4/2024	1	0
+Carrie Harris	11/4/2024	1	0
+Cary Powell	11/4/2024	1	0
+Charles H. Parker Academic Center	11/4/2024	0	0
+Courtney Romney	11/4/2024	1	0
+Cox Mill Elementary	11/4/2024	99	0
+Debbie Hawn	11/4/2024	1	0
+emily patterson	11/4/2024	1	0
+Frances Engstrom	11/4/2024	1	0
+Gold Hill Elementary School	11/4/2024	146	0
+HH Beam Elementary	11/4/2024	0	0
+Jason Baker	11/4/2024	1	0
+Jillian Peters	11/4/2024	1	0
+Karla Dowe	11/4/2024	1	0
+Kylie Mitchell	11/4/2024	2	0
+Lauren Peach	11/4/2024	2	0
+Lincoln Heights Montessori School	11/4/2024	33	0
+Lyndsay Brisson	11/4/2024	1	0
+Mary Schmidt	11/4/2024	1	0
+Mona Gopal	11/4/2024	1	0
+Morganton Day School	11/4/2024	22	0
+Northwest School of the Arts	11/4/2024	0	0
+Palisades Episcopal School	11/4/2024	0	0
+Regina Williams	11/4/2024	1	0
+Robert Gucwa	11/4/2024	1	0
+Sandra Starnes	11/4/2024	1	0
+Shakeer Abubaker	11/4/2024	1	0
+Vinod Kasha	11/4/2024	1	0
+Whitney Cope	11/4/2024	2	0
+Yaneka Wyndham	11/4/2024	1	0
+Charles H. Parker Academic Center	11/5/2024	22	0
+Northwest School of the Arts	11/5/2024	17	0
+amber rose	11/6/2024	1	0
+Ana G Herrera Parra	11/6/2024	2	0
+Brent Goodson	11/6/2024	1	0
+Cox Mill Elementary	11/6/2024	99	0
+Jaime Manuel	11/6/2024	1	0
+Jennifer Hedrick	11/6/2024	1	0
+Jessie Rayfield	11/6/2024	1	0
+Joanna Larson	11/6/2024	1	0
+Joseph Flores	11/6/2024	1	0
+Katye Rosentel	11/6/2024	1	0
+Krista Arraes	11/6/2024	1	0
+Kristy Smith	11/6/2024	1	0
+Mai Chia Vang	11/6/2024	1	0
+Mallard Creek Elementary School	11/6/2024	44	0
+Marivel Lemus	11/6/2024	1	0
+Mark Elsishans	11/6/2024	1	0
+Monica Martinelli	11/6/2024	1	0
+Rayshawn Mack	11/6/2024	1	0
+Sally Lo	11/6/2024	1	0
+Sarah Shreve	11/6/2024	1	0
+Snow Creek Elementary	11/6/2024	104	0
+Stephen Burgess	11/6/2024	1	0
+Swati Mishra	11/6/2024	1	0
+Tina Brinkley	11/6/2024	1	0
+Tori Bradley	11/6/2024	1	0
+Watkins Nance Elementary School	11/6/2024	0	0
+Florence School District 1 - REACH Program	11/7/2024	327	0
+HH Beam Elementary	11/7/2024	0	0
+Kali Cooper	11/7/2024	41	0
+Kathyrn Scott	11/7/2024	44	0
+Mallard Creek Elementary School	11/7/2024	0	0
+Anna Ward	11/8/2024	1	0
+Bernadette Duncan	11/8/2024	1	0
+Caitlin Snyder	11/8/2024	28	0
+Carolina Christian Academy	11/8/2024	0	0
+Concordia Christian Day School	11/8/2024	0	0
+Danielle Lackey	11/8/2024	2	0
+Edgar Mendoza	11/8/2024	1	0
+Farmer Elementary School	11/8/2024	40	0
+Jessica Westby	11/8/2024	1	0
+Kayla McArthur	11/8/2024	1	0
+Langtree Charter Academy	11/8/2024	0	0
+Leigh Ann Trent	11/8/2024	2	0
+Lela Sample	11/8/2024	1	0
+Michael Stevens	11/8/2024	1	0
+Michelle Day	11/8/2024	2	0
+Michelle Sharpe	11/8/2024	1	0
+Monica Haro	11/8/2024	1	0
+Nate McCurry	11/8/2024	1	0
+Palisades Episcopal School	11/8/2024	68	0
+Rebecca Rhoney	11/8/2024	2	0
+Reed Bumgarner	11/8/2024	1	0
+Sesn Lineberger	11/8/2024	1	0
+Sheets Memorial Christian School	11/8/2024	29	0
+Southeast Middle School	11/8/2024	0	0
+Stephanie Holman	11/8/2024	1	0
+The John Crosland School	11/8/2024	24	0
+Tina Wyatt	11/8/2024	1	0
+Universal Christian School	11/8/2024	65	0
+Providence Day School	11/11/2024	0	0
+Amanda Johnson	11/12/2024	0	0
+Charlotte East Language Academy	11/12/2024	89	0
+Jay M Robinson Middle	11/12/2024	0	0
+Palisade High School Extensions	11/12/2024	0	30
+Palisades High School - Extensions	11/12/2024	0	-30
+Palisades High School Extensions	11/12/2024	0	0
+Piedmont Middle School	11/12/2024	0	0
+Providence Day School	11/12/2024	0	0
+Williamsburg Elementary	11/12/2024	84	0
+Charles E. Boger Elementary	11/13/2024	159	0
+Corvian Community School	11/13/2024	105	0
+Haywood County Schools	11/13/2024	62	0
+Hickory Grove Elementary School	11/13/2024	0	0
+Jessica Bradley	11/13/2024	0	0
+Maiden High School	11/13/2024	17	0
+Oakdale Elementary	11/13/2024	69	0
+Piedmont Middle School	11/13/2024	0	0
+Charlotte East Language Academy	11/14/2024	40	0
+Cleveland Academy of Leadership	11/14/2024	0	0
+Hanford Dole Elementary	11/14/2024	0	0
+Lake Norman Elementary School	11/14/2024	92	0
+Palisades Park Elementary	11/14/2024	170	0
+Piedmont Middle School	11/14/2024	0	0
+River Trail Elementary	11/14/2024	93	0
+Winget Park Elementary School	11/14/2024	117	0
+Adrienne Frentzel	11/15/2024	2	0
+Carolina Collaborative Prep	11/15/2024	55	0
+Charlotte East Language Academy	11/15/2024	40	0
+Dominion Christian Academy	11/15/2024	21	0
+Edgewood High School	11/15/2024	31	0
+Erica Yale	11/15/2024	1	0
+Farmer Elementary School	11/15/2024	0	0
+Jessica Freeman	11/15/2024	1	0
+Jessica Strickland	11/15/2024	1	0
+Kathryn Mallick	11/15/2024	1	0
+Kevin Burge	11/15/2024	1	0
+Lake Norman Elementary School	11/15/2024	80	0
+Long Creek Elementary	11/15/2024	0	0
+Meredith Hubbard	11/15/2024	1	0
+Patrick Straub	11/15/2024	1	0
+River Trail Elementary	11/15/2024	72	0
+Robert Bales	11/15/2024	1	0
+Shamrock Gardens Elementary School	11/15/2024	108	0
+South Kilbourne Elementary	11/15/2024	0	0
+Spartanburg High School	11/15/2024	0	0
+Tuckaseegee Elementary School	11/15/2024	0	0
+Union Day School	11/15/2024	59	0
+Vojin Jaksic	11/15/2024	1	0
+Anita Williams	11/18/2024	1	0
+Anonymous Buyer	11/18/2024	12	0
+Denise Kennedy	11/18/2024	2	0
+HH Beam Elementary	11/18/2024	95	0
+Joi Lewis	11/18/2024	1	0
+Jolonna Byrd-Moore	11/18/2024	2	0
+Kayla Wells	11/18/2024	1	0
+Monroe Charter Academy	11/18/2024	39	0
+Paisleigh Crawford	11/18/2024	2	0
+Pleasant Ridge	11/18/2024	133	0
+Southwood Elementary	11/18/2024	123	0
+Statesville Road Elementary	11/18/2024	0	0
+Thomas Throne	11/18/2024	1	0
+Bonnie Cone Leadership Academy	11/19/2024	49	0
+Langtree Charter Academy	11/19/2024	147	0
+Seeds of Promise	11/19/2024	0	0
+John P. Thomas Elementary	11/20/2024	111	0
+Northeast Middle School	11/20/2024	0	0
+Performance Learning Center	11/20/2024	0	0
+Rock Springs Elementary	11/20/2024	128	0
+Sugar Ridge Elementary	11/20/2024	112	0
+Angela Townsend	11/21/2024	1	0
+Armelja Clay	11/21/2024	1	0
+Caohung Le	11/21/2024	1	0
+Chasity Yates	11/21/2024	1	0
+Concetta Gordon	11/21/2024	1	0
+Danielle DeMatteis	11/21/2024	1	0
+Ellendale Elementary	11/21/2024	56	0
+Emmanuella Joseph	11/21/2024	1	0
+Eric Austin	11/21/2024	2	0
+Erin Warrick	11/21/2024	1	0
+Geoffery P Stroud	11/21/2024	1	0
+ICess Canady	11/21/2024	1	0
+Intellicor International Academy	11/21/2024	33	0
+Isabella Ruiz	11/21/2024	1	0
+Janet M Lowe	11/21/2024	1	0
+Jelle de Ronde	11/21/2024	1	0
+Kevin Klinglesmith	11/21/2024	1	0
+Laurel Park Elementary School	11/21/2024	145	0
+Lauren Womble	11/21/2024	1	0
+Lora Lipe	11/21/2024	2	0
+Marisol Barrientos	11/21/2024	2	0
+Pitts School Road Elementary	11/21/2024	128	0
+Rebecca Wilson	11/21/2024	1	0
+Sara Elhagmohamed	11/21/2024	1	0
+Seeds of Promise	11/21/2024	23	0
+Selena Frink	11/21/2024	1	0
+Shantel Fambro	11/21/2024	1	0
+Shaunta Robinson	11/21/2024	2	0
+South Pine Academy	11/21/2024	0	0
+Taije Marshall	11/21/2024	1	0
+Tina Duncan	11/21/2024	2	0
+Vijay Chintakrinda	11/21/2024	1	0
+Vipul Suthar	11/21/2024	2	0
+Athena Lasswell	11/22/2024	1	0
+Bessemer City Central Elementary School	11/22/2024	109	0
+Devonshire Elementary	11/22/2024	0	0
+Ebenezer Avenue Elementary	11/22/2024	79	0
+Hailey Christopher	11/22/2024	1	0
+Hickory Grove Elementary School	11/22/2024	69	0
+James Green	11/22/2024	1	0
+JM Alexander Middle	11/22/2024	0	0
+Liberty Preparatory Christian Academy	11/22/2024	0	0
+North Rowan Elementary	11/22/2024	0	0
+South Kilbourne Elementary	11/22/2024	40	0
+Spartanburg High School	11/22/2024	0	0
+Taylors Elementary School	11/22/2024	136	0
+Ballantyne Elementary School	11/25/2024	152	0
+China Grove Middle	11/25/2024	0	0
+Hollow Springs Motlow Elementary	11/25/2024	0	86
+Holly Springs Motlow Elementary	11/25/2024	0	-86
+Lebanon Road Elementary School	11/25/2024	0	0
+St. John's Elementary School	11/25/2024	67	0
+Briarwood Elementary School	11/26/2024	110	0
+Lebanon Road Elementary School	11/26/2024	0	0
+Muller Road MIddle School	12/2/2024	55	0
+Adenia Bibbins	12/3/2024	1	0
+Amari Bauknight	12/3/2024	1	0
+Amelia Lee	12/3/2024	1	0
+Arnora Ross	12/3/2024	1	0
+Asialyan Gordon	12/3/2024	1	0
+Brianna Roberts	12/3/2024	1	0
+Christiana Wolfe	12/3/2024	1	0
+Christopher Singleton Sr.	12/3/2024	1	0
+Danielle Blackson	12/3/2024	1	0
+Donovan Barber	12/3/2024	1	0
+Kayla Buie	12/3/2024	0	0
+Keisha Smith	12/3/2024	1	0
+Kiven Colette Fonkika	12/3/2024	1	0
+LaKeisha Lindsey	12/3/2024	1	0
+Mariah Dobson	12/3/2024	1	0
+mary caraballo	12/3/2024	0	0
+Melyssa Hill	12/3/2024	1	0
+Mylisa Miller	12/3/2024	1	0
+Nia Kidd	12/3/2024	1	0
+Patrice Connor	12/3/2024	1	0
+shari sturdivant	12/3/2024	1	0
+Somara Shapheem	12/3/2024	1	0
+Tamara Ross	12/3/2024	1	0
+TAMEKA Martin	12/3/2024	1	0
+TMSA Charlotte Elementary School	12/3/2024	89	0
+University Meadows Elementary	12/3/2024	0	0
+Zakiyyah Umar-Barber	12/3/2024	1	0
+Crossway Academy	12/4/2024	34	0
+Irwin Academic	12/4/2024	68	0
+South Pine Academy	12/4/2024	0	0
+Tabernacle Christian School	12/4/2024	24	0
+Alexis Tryon	12/5/2024	1	0
+Alyssa B	12/5/2024	1	0
+Amanda Jennings	12/5/2024	1	0
+Brittany Lowery	12/5/2024	1	0
+Carla Brown	12/5/2024	1	0
+Carrie Estridge	12/5/2024	2	0
+Chavis Clemmon	12/5/2024	0	0
+Cindy Gonzalez	12/5/2024	1	0
+Community Christian Academy	12/5/2024	18	0
+Danelle Darby	12/5/2024	2	0
+Della Alexander	12/5/2024	1	0
+Dhimon Hines	12/5/2024	1	0
+Grove Park Elementary School	12/5/2024	0	0
+High Point Christian Academy	12/5/2024	108	0
+Jamaal Black	12/5/2024	1	0
+Jayme Bridges	12/5/2024	1	0
+John Barbee	12/5/2024	2	0
+Jonathan Abrams	12/5/2024	1	0
+Josh Slusarczyk	12/5/2024	1	0
+Keehanna Avinger	12/5/2024	1	0
+Kern County Cross Country All Stars	12/5/2024	90	0
+Kings Town Elementary School	12/5/2024	130	0
+Krista Joyner	12/5/2024	1	0
+Marcel Howard	12/5/2024	2	0
+Maria Miranda	12/5/2024	2	0
+Michelle Halterman	12/5/2024	1	0
+Mountain Island Charter School	12/5/2024	139	0
+Ocksun Reitano	12/5/2024	1	0
+Rhyes Rhyes	12/5/2024	1	0
+Ridge Road Middle	12/5/2024	0	0
+Sandy Birmingham	12/5/2024	1	0
+Sarah Dye	12/5/2024	1	0
+Shamika Willaims	12/5/2024	1	0
+Shane Hunter	12/5/2024	1	0
+Stacia Hoelscher	12/5/2024	1	0
+Stephanie Blundell	12/5/2024	1	0
+Sunset Park	12/5/2024	80	0
+Sydney Pascale	12/5/2024	1	0
+William Alexander	12/5/2024	2	0
+Allenbrook Elementary	12/6/2024	0	0
+Bethware Elementary	12/6/2024	164	0
+C H	12/6/2024	1	0
+Cassandra Kadakia	12/6/2024	1	0
+Emily Currie	12/6/2024	0	0
+Erica Coley	12/6/2024	0	0
+Erin Schackman	12/6/2024	1	0
+Fast Track Lamont	12/6/2024	39	0
+Hornets Nest Elementary School	12/6/2024	0	66
+Irwin Academic Center	12/6/2024	75	-66
+Jennifer Bone	12/6/2024	1	0
+Kaylia Sammut	12/6/2024	1	0
+Lake Wylie Elementary School	12/6/2024	0	0
+Lansdowne Elementary School	12/6/2024	105	0
+Lewisville Elementary School	12/6/2024	114	0
+Metro School	12/6/2024	0	0
+Raven Campbell-Howze	12/6/2024	1	0
+Sarah Vastis	12/6/2024	1	0
+Summer Lawsom	12/6/2024	1	0
+Taylor Warren	12/6/2024	1	0
+United States Tennis Association Southern	12/6/2024	0	0
+Grove Park Elementary School	12/7/2024	0	0
+United States Tennis Association Southern	12/7/2024	3	0
+East Iredell Elementary	12/9/2024	147	0
+Meck prek class	12/9/2024	40	0
+Palisades High School - Extensions	12/9/2024	24	0
+Palmetto Elementary School	12/9/2024	102	0
+Steele Creek Preparatory Academy	12/9/2024	0	0
+The College Prep and Leadership Academy	12/9/2024	0	0
+Charlotte Mecklenburg Academy	12/10/2024	0	-30
+Hemby Bridge Elementary	12/10/2024	98	-100
+Jessica Bradley	12/10/2024	0	100
+Melissa Manikkam	12/10/2024	0	30
+Oakhurst STEAM Academy	12/10/2024	89	0
+Palisades High School	12/10/2024	0	0
+Courtney Montgomery	12/11/2024	1	0
+Eastover Elementary School	12/11/2024	66	0
+Ebony Harris	12/11/2024	1	0
+Eszter Osigwe	12/11/2024	1	0
+Hornets Nest Elementary	12/11/2024	122	0
+Katy Chang	12/11/2024	1	0
+Kelly Mosby	12/11/2024	1	0
+Rebecca Walsh	12/11/2024	1	0
+Ridge Road Middle	12/11/2024	0	0
+Shanna Hill	12/11/2024	1	0
+Devonshire Elementary	12/12/2024	94	0
+East Iredell Elementary	12/12/2024	0	0
+Lawrence Orr Elementary School	12/12/2024	109	0
+Mountain Island Charter School	12/12/2024	0	0
+Palisades Park Elementary	12/12/2024	193	0
+Tuckaseegee Elementary School	12/12/2024	124	0
+Watkins Nance Elementary School	12/12/2024	55	0
+Cassandra Pugh	12/13/2024	0	118
+East Elementary School	12/13/2024	0	0
+Grove Park Elementary	12/13/2024	0	-118
+Irwin Academic Center	12/13/2024	71	0
+Long Creek Elementary	12/13/2024	0	0
+Palisades Episcopal School	12/13/2024	38	0
+Palisades Park Elementary	12/13/2024	0	0
+Piedmont High School	12/13/2024	0	0
+Prospect Elementary School	12/13/2024	0	0
+River Oaks Academy	12/13/2024	0	0
+Winget Park Elementary	12/13/2024	0	0
+UNC Charlotte	12/14/2024	55	0
+Eastover Elementary School	12/16/2024	93	0
+Mallard Creek High School	12/16/2024	0	0
+Pomaria-garmany Elementary	12/16/2024	58	0
+Telra Institute	12/16/2024	85	0
+Carvin Hogan	12/17/2024	1	0
+Dykeata Robinson	12/17/2024	1	0
+Ebenezer Ave Elementary School	12/17/2024	0	0
+Epiphany School of Charlotte	12/17/2024	33	0
+Jackson School	12/17/2024	87	0
+mary caraballo	12/17/2024	1	0
+Piney Grove Elementary School	12/17/2024	66	0
+Steven Dellinger	12/17/2024	1	0
+University Meadows Elementary	12/17/2024	44	0
+East Elementary School	12/18/2024	0	0
+Knollwood Elementary School	12/18/2024	110	0
+Konnoak Middle School	12/18/2024	68	0
+Northeast Middle School	12/18/2024	39	0
+Trinity Episcopal School	12/18/2024	49	0
+As-Sabeel Academy of Greenville	12/19/2024	63	0
+Charlotte East Language Academy	12/19/2024	0	0
+Innovation Learning	12/19/2024	26	0
+Rocky River High School	12/19/2024	0	0
+Winchester Head Start	12/19/2024	0	0
+Winget Park Elementary	12/19/2024	137	0
+Berewick Elementary	12/20/2024	36	0
+Huntersville Parks and Rec	12/23/2024	41	0
+Samson Grigoryev	12/23/2024	28	0
+Catholic Charities	12/30/2024	20	0
+Partners In Ministry	1/3/2025	0	0
+Irwin Academic	1/7/2025	71	0
+Hickory Grove Elementary School	1/10/2025	0	0
+Rockwell Christian School	1/10/2025	0	0
+South Pine Academy	1/10/2025	0	0
+Tega Cay Elementary	1/10/2025	0	0
+Country Day School	1/13/2025	66	0
+Trinity Episcopal School	1/13/2025	55	0
+Faith Christian School	1/15/2025	0	0
+Forest Creek Middle School	1/16/2025	17	0
+LeShawn Starling	1/16/2025	0	0
+Mallard Creek STEM Academy	1/16/2025	135	0
+maria newberry	1/16/2025	0	22
+Maria Newberry	1/16/2025	0	-22
+Muni Bhambri	1/16/2025	1	0
+Parkside Elementary	1/16/2025	0	0
+Robinson Elementary School	1/16/2025	60	0
+Rocky River Elementary	1/16/2025	94	0
+The Oak Academy	1/16/2025	25	0
+Berryhill School	1/17/2025	44	0
+Charlotte East Language Academy	1/17/2025	107	-107
+Courtney Evans	1/17/2025	0	107
+Fairfield Magnet School	1/17/2025	37	0
+Hickory Grove Elementary School	1/17/2025	0	0
+Hurley Elementary	1/17/2025	0	0
+Skyland Elementary	1/17/2025	166	0
+Union Academy School of Monroe	1/17/2025	207	0
+Aquadale Elementary	1/21/2025	0	0
+Country Day School	1/21/2025	35	0
+Endhaven Elementary	1/21/2025	159	0
+Jackson Day School	1/21/2025	102	0
+Michael Meyers	1/21/2025	1	0
+Springbrook Behavioral Health Center	1/22/2025	0	0
+Lake Wylie Elementary School	1/23/2025	0	0
+Melanin Village Prep	1/23/2025	0	0
+a_whisnant@yahoo.com	1/24/2025	1	0
+Berewick Elementary	1/24/2025	0	0
+Covenant Classical School	1/24/2025	0	0
+Crown Point Elementary	1/24/2025	22	0
+Digi-bridge	1/24/2025	18	0
+Druid Hills Academy	1/24/2025	22	0
+Jen Fortson	1/24/2025	1	0
+Joseph W. Grier Academy	1/24/2025	0	0
+Mint Hill Elementary	1/24/2025	37	0
+Nebo Crossing Academy	1/24/2025	24	0
+Sharon Elementary	1/24/2025	44	0
+Sherrills Ford Elementary	1/24/2025	106	0
+Shontella Howard	1/24/2025	38	0
+Summit Parkway Middle School	1/24/2025	0	0
+Winget Park Elementary	1/24/2025	39	0
+Alex Taylor	1/28/2025	1	0
+BetterSchool	1/28/2025	0	0
+Lisa Thorsen	1/28/2025	0	0
+Berewick Elementary	1/29/2025	93	0
+Charlotte Country Day School	1/29/2025	0	0
+Springbrook Behavioral Health Center	1/29/2025	0	0
+Bradford Preparatory School	1/30/2025	142	0
+Cornerstone Adventist Academy	1/30/2025	15	0
+Ellendale Elementary	1/30/2025	65	0
+Grove Park Elementary	1/30/2025	118	0
+Keystone Montessori School	1/30/2025	27	0
+Irwin Academic	2/3/2025	0	0
+Jesse Bobo Elementary	2/3/2025	0	0
+Movement School	2/3/2025	0	0
+Bennetts Mill Middle School with Student Group Tours	2/4/2025	0	0
+Charlotte Country Day School	2/4/2025	0	0
+Charlotte Mecklenburg Academy	2/4/2025	0	0
+Oakdale Elementary	2/4/2025	94	0
+Charlotte Country Day School	2/5/2025	0	0
+Davidson Day School	2/5/2025	40	0
+Gate City Charter Academy	2/5/2025	47	0
+Richmond Drive Elementary	2/5/2025	79	0
+Ebenezer Avenue Elementary	2/6/2025	80	0
+Providence Spring Elementary	2/6/2025	0	0
+Academy for Teaching and Learning	2/7/2025	69	0
+American Leadership Academy	2/7/2025	0	0
+Kent Academy Inc - Williams	2/7/2025	42	0
+Liberty Preparatory Christian Academy	2/7/2025	61	0
+Myers Park Traditional Elementary School	2/7/2025	133	0
+Polk County Middle School	2/7/2025	173	0
+Weatherstone Elementary	2/7/2025	145	0
+Anonymous Buyer	2/10/2025	1	0
+Carolina Christian Academy	2/10/2025	48	0
+Kaleidoscope Collective Homeschool	2/10/2025	0	0
+Movement School	2/10/2025	88	0
+Croft Community School	2/11/2025	0	0
+Galax Middle School	2/11/2025	0	0
+Gold Hill Middle School	2/11/2025	30	0
+Lake Norman Charter School	2/11/2025	0	0
+Morgan Elementary School	2/11/2025	0	0
+Movement School Southwest	2/11/2025	58	0
+American Leadership Academy	2/12/2025	17	0
+C.T. Walker Magnet	2/12/2025	0	0
+Courtney Lonca	2/12/2025	0	0
+Ethan Shive Elementary School	2/12/2025	73	0
+North Rowan Elementary	2/12/2025	79	0
+Springbrook Behavioral Health Center	2/12/2025	16	0
+Townville Elementary	2/12/2025	55	0
+East Elementary School	2/13/2025	47	0
+Liberty Elementary	2/13/2025	0	0
+Lower Richland High School	2/13/2025	0	0
+Oaklawn Language Academy	2/13/2025	50	0
+Parkside Elementary	2/13/2025	77	0
+Spearman Elementary	2/13/2025	109	0
+Wingate Elementary	2/13/2025	0	0
+Christ The Cornerstone Academy	2/14/2025	65	0
+Davis Drive Elementary School	2/14/2025	198	0
+Lake Wylie Elementary School	2/14/2025	79	0
+Woodhill Elementary School	2/14/2025	88	0
+Berewick Elementary	2/17/2025	0	0
+Blythe Elementary	2/17/2025	0	0
+Cornelius Elementary	2/17/2025	28	0
+Cotswold Elementary	2/17/2025	0	0
+Dilworth ASEP	2/17/2025	55	0
+Joseph W. Grier Academy	2/17/2025	0	0
+Long Creek Elementary	2/17/2025	33	0
+Mooresville Intermediate School	2/17/2025	0	0
+Morgan Elementary School	2/17/2025	50	0
+Reedy Creek Elementary	2/17/2025	0	0
+New Town Elementary	2/18/2025	72	0
+Susan Mitchell	2/18/2025	0	0
+Trinity Oaks Retirement	2/18/2025	27	0
+Berewick Elementary School	2/19/2025	0	0
+East Burke High School	2/19/2025	0	0
+Elkin Elementary School	2/19/2025	0	0
+Mint Hill Elementary	2/19/2025	0	0
+Mooresville Intermediate School	2/19/2025	0	0
+New Town Elementary	2/19/2025	0	0
+Providence Spring Elementary	2/19/2025	0	0
+Woodhill Elementary School	2/19/2025	0	0
+Catawba Elementary	2/20/2025	0	0
+Christ Classical Academy of Charlotte	2/20/2025	0	0
+Hickory Ridge Elementary School	2/20/2025	0	0
+Meg Ruediger	2/20/2025	0	82
+Mooresville Intermediate School	2/20/2025	0	0
+Pine Lake Prep	2/20/2025	0	-82
+Anonymous Buyer	2/21/2025	1	0
+Bonnie Cone Classical Academy	2/21/2025	0	0
+Charlotte Christian School	2/21/2025	78	0
+Dobys Bridge Elementary	2/21/2025	0	0
+Elon Park Elementary	2/21/2025	161	0
+Mooresville Intermediate School	2/21/2025	0	0
+New Dimensions Charter	2/21/2025	0	0
+New Salem Elementary School	2/21/2025	0	0
+Pine Lake Prep	2/21/2025	0	0
+Reidsville Middle School	2/21/2025	0	0
+Crestview Elementary	2/24/2025	91	0
+Oakview Elementary School	2/24/2025	102	0
+Southwest Guilford Middle	2/24/2025	110	0
+EL Wright Leadership Academy	2/25/2025	115	0
+Harmony Elementary	2/25/2025	76	0
+Pineville Elementary School	2/25/2025	0	0
+River Oaks Academy	2/25/2025	0	0
+Southwest Guilford Middle	2/25/2025	160	0
+WG Sanders Middle School	2/25/2025	0	0
+Berewick Elementary School	2/26/2025	0	0
+Buena Vista Elementary School	2/26/2025	160	0
+Hope Academy	2/26/2025	38	0
+JENNIFER BITHELL	2/26/2025	1	0
+Oakview Elementary School	2/26/2025	95	0
+South Pine Academy	2/26/2025	0	0
+Concord Lake STEAM Academy	2/27/2025	106	0
+Mooresville Intermediate School	2/27/2025	0	0
+Sherwood Elementary	2/27/2025	84	0
+West Rowan Elementary	2/27/2025	103	0
+Alex Taylor	2/28/2025	1	0
+Alison Johnson	2/28/2025	1	0
+Alyssa Bauguss	2/28/2025	1	0
+Andrew Callender	2/28/2025	1	0
+Anna Kerrigan	2/28/2025	1	0
+Arielle Hernandez	2/28/2025	3	0
+Ashley Beckham	2/28/2025	1	0
+Benita Mccullum	2/28/2025	1	0
+Brenna Getz	2/28/2025	0	88
+Brittany Cloninger	2/28/2025	1	0
+Brooke Lee	2/28/2025	1	0
+Brookside Elementary School	2/28/2025	103	0
+Caitlin Bhimull	2/28/2025	2	0
+Calvin Teague Amanda Teague	2/28/2025	2	0
+Carlos Chavis	2/28/2025	1	0
+Casey Grandelli	2/28/2025	1	0
+Christina Ferguson	2/28/2025	1	0
+Christine Mary Walsh	2/28/2025	1	0
+Debora Tomko	2/28/2025	2	0
+East Middle School	2/28/2025	105	0
+Elsie Weyer	2/28/2025	1	0
+Emilie Parker	2/28/2025	1	0
+Emory Corbin	2/28/2025	1	0
+Eric Edman	2/28/2025	1	0
+Hannah Tvedten	2/28/2025	0	0
+Heidi Purnell	2/28/2025	1	0
+Hollow Springs Motlow Elementary	2/28/2025	0	0
+Holly Schenck	2/28/2025	1	0
+Israel Cortes	2/28/2025	1	0
+Jamika Byrd	2/28/2025	2	0
+Jane Leneave	2/28/2025	1	0
+Jason Gould	2/28/2025	1	0
+Jason Smith	2/28/2025	1	0
+Jennifer Brotherton	2/28/2025	1	0
+Jennifer Fletcher	2/28/2025	2	0
+Jennifer Lloyd	2/28/2025	1	0
+Jeremy Bogard	2/28/2025	1	0
+Jessie Vazquez	2/28/2025	2	0
+Justin Frawley	2/28/2025	1	0
+Kacee Jennings	2/28/2025	1	0
+Katherine Harrigan	2/28/2025	1	0
+Katie Bauguss	2/28/2025	1	0
+Katrina Williams	2/28/2025	1	0
+kimberly jennings	2/28/2025	2	0
+Kimberly Morrow	2/28/2025	1	0
+Kristina Hill	2/28/2025	1	0
+Krystal Young	2/28/2025	1	0
+Lillie Patterson	2/28/2025	3	0
+Lisa Thorsen	2/28/2025	54	0
+Louise Duval	2/28/2025	2	0
+Lyndsay Mack	2/28/2025	1	0
+Marsha Hathcock	2/28/2025	2	0
+Matthew Maynor	2/28/2025	1	0
+Melissa Hague	2/28/2025	1	0
+Michelle Lovelace	2/28/2025	2	0
+Mikayla King	2/28/2025	1	0
+Mooresville Intermediate School	2/28/2025	0	0
+Northside Elementary	2/28/2025	95	0
+Rachael Robertson	2/28/2025	1	0
+Randall Nine	2/28/2025	2	0
+Red Bank Elementary School Getz	2/28/2025	88	-88
+Renee Singer Shook	2/28/2025	2	0
+Rutherfordton Elementary School	2/28/2025	15	0
+Shanna Baynard	2/28/2025	0	66
+Sherwood Elementary	2/28/2025	0	0
+Steele Creek Elementary School	2/28/2025	0	0
+Stephanie Sossamon	2/28/2025	1	0
+Toni Jackson	2/28/2025	1	0
+Tori Stokes	2/28/2025	1	0
+Tosha Crisp	2/28/2025	1	0
+Trey Mantooth	2/28/2025	1	0
+Tryon Elementary School	2/28/2025	67	-66
+Tyerra Ray	2/28/2025	1	0
+Vivian Hampton	2/28/2025	1	0
+William Mullen	2/28/2025	1	0
+Tuesday's Children	3/1/2025	22	0
+Aimee Slingerland	3/3/2025	1	0
+Akela Link	3/3/2025	1	0
+Amanda Simms	3/3/2025	1	0
+Amy Smith	3/3/2025	2	0
+Ashlee Galati	3/3/2025	1	0
+Catawba Elementary	3/3/2025	55	0
+Cheryl Seeley	3/3/2025	1	0
+Christyna Silvestri	3/3/2025	1	0
+Erin Maynard	3/3/2025	1	0
+First Presbyterian Church CDC	3/3/2025	0	0
+Indian Trail Elementary	3/3/2025	112	0
+Janet Pypiak	3/3/2025	1	0
+Jason Flewelling	3/3/2025	1	0
+Jennifer Decker	3/3/2025	1	0
+Jennifer Kepley	3/3/2025	2	0
+Jerica Parlier	3/3/2025	1	0
+Jesse Bryce Bouk	3/3/2025	1	0
+Jessica Leek	3/3/2025	1	0
+Jessica Medina	3/3/2025	2	0
+Jose Rodriguez	3/3/2025	1	0
+Joshua Haire	3/3/2025	1	0
+Justine Benfield	3/3/2025	1	0
+Kitch Deaton	3/3/2025	1	0
+Lori Armstrong	3/3/2025	1	0
+Maria Johnson	3/3/2025	1	0
+Mark Muzroll	3/3/2025	3	0
+Marlon Gill	3/3/2025	1	0
+Matthew Burkey	3/3/2025	1	0
+Michelle muzroll	3/3/2025	1	0
+Mooresville Intermediate School	3/3/2025	90	0
+Rachel Tree	3/3/2025	1	0
+Sabrina Yancheski	3/3/2025	1	0
+Shania Prestwood	3/3/2025	2	0
+Thomas Engelson	3/3/2025	1	0
+Timothy McLendon	3/3/2025	1	0
+Wadesboro Elementary School	3/3/2025	64	0
+Yussif SHEHATA	3/3/2025	1	0
+Allenbrook Elementary	3/4/2025	0	0
+Allison Neff	3/4/2025	1	0
+Amber Irizarry-Reyes	3/4/2025	1	0
+Amy Pipala	3/4/2025	1	0
+Andrea White	3/4/2025	0	67
+Anonymous Buyer	3/4/2025	1	0
+Casey Larter	3/4/2025	1	0
+Charlotte Mecklenburg Academy	3/4/2025	30	-30
+Eric Edman	3/4/2025	1	0
+Hickory Ridge Elementary School	3/4/2025	0	0
+Jalene Rogersv	3/4/2025	1	0
+JoAnne Pandolfo	3/4/2025	1	0
+Jordan Wheeler	3/4/2025	1	0
+Kelly Allen	3/4/2025	1	0
+Laura Brower	3/4/2025	1	0
+Matthew Adams	3/4/2025	1	0
+Melissa Manikkam	3/4/2025	0	30
+Mooresville Intermediate School	3/4/2025	67	-67
+North Rowan Elementary	3/4/2025	76	0
+Reidville Elementary	3/4/2025	144	0
+Robert Witherel	3/4/2025	1	0
+ROBIN Cowan	3/4/2025	1	0
+Scott Young	3/4/2025	1	0
+Seth Spry	3/4/2025	1	0
+Tina Smith	3/4/2025	1	0
+Wadesboro Elementary School	3/4/2025	68	0
+Westside Christian Academy	3/4/2025	69	0
+Allenbrook Elementary	3/5/2025	45	0
+Berewick Elementary School	3/5/2025	0	0
+Bethany Elementary	3/5/2025	0	0
+East Mooresville Intermediate School	3/5/2025	0	0
+First Presbyterian Church CDC	3/5/2025	0	0
+H.E. Corley Elementary School	3/5/2025	0	0
+Lake Norman Charter School	3/5/2025	127	0
+Lead Academy	3/5/2025	48	0
+Berryhill School	3/6/2025	41	0
+East Mooresville Intermediate School	3/6/2025	117	0
+First Presbyterian Church CDC	3/6/2025	0	0
+Garinger High School	3/6/2025	0	0
+Hurley Elementary	3/6/2025	74	0
+Lake Norman Charter School	3/6/2025	124	0
+North Ridge Middle	3/6/2025	43	0
+Wadesboro Elementary School	3/6/2025	55	0
+Walker Town Middle	3/6/2025	0	0
+Boiling Springs Elementary	3/7/2025	162	0
+East Burke Middle School	3/7/2025	224	0
+Gaston Christian School	3/7/2025	0	0
+Greenwood Christian School	3/7/2025	49	0
+North Ridge Middle	3/7/2025	0	0
+South Kilbourne Elementary	3/7/2025	0	0
+St. Gabriel Catholic School	3/7/2025	104	0
+St. John Catholic School	3/7/2025	18	0
+Union Day School	3/7/2025	114	0
+White Oak Elementary	3/7/2025	0	0
+Carolina International School	3/10/2025	36	0
+Christ Classical Academy of Charlotte	3/10/2025	16	0
+Christen Griner	3/10/2025	2	0
+Hickory Grove Sharon Elementary	3/10/2025	59	0
+Lauren Flack	3/10/2025	1	0
+Mountain View Elementary	3/10/2025	153	0
+The John Crosland School	3/10/2025	17	0
+Acheshae Henry	3/11/2025	1	0
+Amy Portney	3/11/2025	1	0
+Anna Owens	3/11/2025	1	0
+BobbiAnn Parker	3/11/2025	1	0
+carmen smith	3/11/2025	1	0
+Crystal Kyzer	3/11/2025	1	0
+Elizabeth Lane Elementary School	3/11/2025	182	0
+Erin Barr	3/11/2025	1	0
+First Presbyterian Church CDC	3/11/2025	21	0
+Jaseka Lanfair Neblett	3/11/2025	1	0
+Jessica Garcia	3/11/2025	1	0
+Lauren Vann	3/11/2025	1	0
+Nicole Ritzel	3/11/2025	1	0
+Powdersville Middle School	3/11/2025	141	0
+Red Bank Elementary	3/11/2025	97	0
+Sara Ellisor	3/11/2025	1	0
+Scott Tuttle	3/11/2025	1	0
+Unity Classical Charter School	3/11/2025	147	0
+American Leadership Academy	3/12/2025	0	0
+Bonnie Cone Classical Academy	3/12/2025	138	0
+Centerville Elementary	3/12/2025	100	0
+Grandview Middle School	3/12/2025	139	0
+Huntingtowne Farms Elementary	3/12/2025	128	0
+North Ridge Middle	3/12/2025	0	0
+Oakhurst STEAM Academy	3/12/2025	87	0
+Reedy Fork	3/12/2025	0	0
+Tiger Kim's World class Taekwondo	3/12/2025	26	0
+Betsy Garcia	3/13/2025	1	0
+Charles Munday	3/13/2025	2	0
+Dobys Bridge Elementary	3/13/2025	172	0
+Elizabeth Lane Elementary School	3/13/2025	0	0
+Haley Carswell	3/13/2025	1	0
+Harbison West Elementary School	3/13/2025	41	0
+Heather Collins	3/13/2025	1	0
+Hickory Grove Elementary School	3/13/2025	90	0
+Hopkins Elementary School	3/13/2025	42	0
+Jacqueline Ugalde	3/13/2025	2	0
+Juan Hincapie	3/13/2025	2	0
+Julissa Garcia	3/13/2025	1	0
+Kristen Sprenger	3/13/2025	1	0
+Lower Creek Elementary	3/13/2025	0	0
+Metro School	3/13/2025	43	0
+Michael Crisp	3/13/2025	2	0
+Michael Sabino	3/13/2025	1	0
+Northwestern High School	3/13/2025	29	0
+Oakdale Elementary School	3/13/2025	90	0
+Paw Creek Elementary School	3/13/2025	0	0
+Scott Herring	3/13/2025	1	0
+Snow Creek Elementary	3/13/2025	78	0
+Tshuwah Hebrew Academy	3/13/2025	24	0
+Vickie Clontz	3/13/2025	2	0
+Alishia Duncan	3/14/2025	1	0
+American Leadership Academy	3/14/2025	32	0
+Ballentine Elementary	3/14/2025	0	0
+Cameron Sanders	3/14/2025	1	0
+Cannon School	3/14/2025	72	0
+East Carolina University Community School	3/14/2025	73	-73
+Highland Creek Elementary	3/14/2025	106	0
+Mint Hill Elementary	3/14/2025	164	0
+Reedy Fork	3/14/2025	0	0
+Riverwalk Academy	3/14/2025	76	0
+Sam Evans	3/14/2025	1	0
+Sharon Elementary	3/14/2025	155	0
+Spartanburg District 6	3/14/2025	124	0
+Tracy Cole	3/14/2025	0	73
+Coulwood Stem Academy	3/17/2025	32	0
+Devona N Devona N Barton	3/17/2025	0	125
+Southwest Charlotte STEM Academy	3/17/2025	110	0
+Sugar Creek Charter	3/17/2025	111	-125
+Villa Heights Elementary	3/17/2025	0	0
+Charlotte Lab School	3/18/2025	88	0
+East Mooresville Intermediate School	3/18/2025	0	0
+Illumination Homeschool Group	3/18/2025	19	0
+Mooresville Intermediate School	3/18/2025	0	0
+Roxboro Community School	3/18/2025	118	0
+Southeast Middle School	3/18/2025	78	0
+Spartanburg district 2	3/18/2025	120	0
+CB Eller Elementary School	3/19/2025	0	0
+Devonshire Elementary	3/19/2025	96	0
+Faith Christian School	3/19/2025	26	0
+Guildford County Schools	3/19/2025	0	0
+Mooresville Intermediate School	3/19/2025	91	0
+North Rowan Middle School	3/19/2025	83	0
+Pageland Elementary School	3/19/2025	0	0
+Villa Heights Elementary	3/19/2025	99	0
+William S. Sandel Elementary School	3/19/2025	86	0
+Benton Heights Elementary	3/20/2025	72	0
+Bethany Community School	3/20/2025	0	0
+Cleveland Academy of Leadership	3/20/2025	93	-93
+First Presbyterian Church CDC	3/20/2025	19	0
+Garinger High School	3/20/2025	46	0
+H.E. Corley Elementary School	3/20/2025	78	0
+Lake Norman Christian School	3/20/2025	0	0
+Melanin Village Prep	3/20/2025	23	0
+North Kannapolis STEM Elementary	3/20/2025	46	0
+Salem Baptist Christian School	3/20/2025	44	0
+Shining Rock Classical Academy	3/20/2025	57	0
+Starlen Simpson	3/20/2025	0	93
+Talented Girls in Action	3/20/2025	15	0
+Westmoore Elementary School	3/20/2025	27	0
+Abby Itani	3/21/2025	1	0
+Alex Shvets	3/21/2025	1	0
+Angela M Waring	3/21/2025	1	0
+Anita McKinney	3/21/2025	2	0
+Anna Marie Neubert	3/21/2025	1	0
+Berewick Elementary	3/21/2025	0	0
+Briarwood Elementary School	3/21/2025	0	0
+Brittany Morgan	3/21/2025	1	0
+Caitlin Neiduski	3/21/2025	1	0
+Candice Anderson	3/21/2025	1	0
+Chris Hope	3/21/2025	1	0
+DeJour McNeil	3/21/2025	1	0
+Edwards Elementary	3/21/2025	0	0
+Evaggelia Berry	3/21/2025	1	0
+Heather Heather	3/21/2025	1	0
+Janie Tettmar	3/21/2025	1	0
+Katrina Weavil	3/21/2025	1	0
+Lake Wylie Elementary School	3/21/2025	0	0
+Liliana Inthaninh	3/21/2025	1	0
+Lindsey Webb	3/21/2025	1	0
+Madelyn Collado	3/21/2025	1	0
+Maegan Gonzalez	3/21/2025	1	0
+Maria Pirlog	3/21/2025	1	0
+Maria Piyaykina	3/21/2025	1	0
+Maria Pulgarin	3/21/2025	1	0
+Marion B Nobles	3/21/2025	1	0
+Michael Wiltz	3/21/2025	1	0
+Mike Pallo	3/21/2025	1	0
+Sarah Cash	3/21/2025	1	0
+Sasha Arent	3/21/2025	1	0
+Socrates Academy	3/21/2025	110	0
+Southwest Charlotte STEM Academy	3/21/2025	58	0
+Tillery Charter School	3/21/2025	0	0
+Valerie Padilla	3/21/2025	1	0
+Weddington Christian Academy	3/21/2025	0	0
+American Leadership Academy	3/24/2025	62	0
+Antoinette Ventura	3/24/2025	1	0
+Carolina Christian School	3/24/2025	70	0
+Davidson K8	3/24/2025	154	0
+Geiger Elementary	3/24/2025	55	0
+Highland Mill Montessori School	3/24/2025	67	0
+Karina Alderson	3/24/2025	2	0
+Koontz Elementary	3/24/2025	45	0
+Olivia Salas	3/24/2025	1	0
+Pine Lake Prep	3/24/2025	178	0
+Smart Kids STREAM Academy	3/24/2025	20	0
+White Knoll Elementary School	3/24/2025	23	0
+Amanda Lovelace	3/25/2025	1	0
+Anonymous Buyer	3/25/2025	4	0
+Ashley Wilson	3/25/2025	1	0
+Bethany Elementary	3/25/2025	75	0
+Derek Hutchins	3/25/2025	2	0
+East Middle School	3/25/2025	105	0
+East Mooresville Intermediate School	3/25/2025	116	0
+Gaston Christian School	3/25/2025	106	0
+Harris Elementary School	3/25/2025	79	0
+Horrell Hill Elementary School	3/25/2025	80	0
+Jacob Buffaloe	3/25/2025	1	0
+Josh Alexander	3/25/2025	2	0
+Justin Humphrey	3/25/2025	2	0
+Keshia Boone	3/25/2025	1	0
+Koontz Elementary	3/25/2025	0	0
+Kyle Sartin	3/25/2025	1	0
+Movement School Eastland	3/25/2025	0	0
+nicole stevens	3/25/2025	3	0
+Reidsville Middle School	3/25/2025	75	0
+South Academy of International Languages	3/25/2025	15	0
+Annie Kramer	3/26/2025	0	160
+Gardner Park Elementary School	3/26/2025	115	0
+Garrett Elementary	3/26/2025	144	-160
+Hemby Bridge Elementary School	3/26/2025	108	0
+Indian Land High School	3/26/2025	0	0
+Irwin Academic	3/26/2025	83	0
+Paris Elementary	3/26/2025	129	0
+Paw Creek Elementary School	3/26/2025	35	0
+Pendleton Elementary	3/26/2025	78	0
+Shining Rock Classical Academy	3/26/2025	60	0
+Travis Gresham	3/26/2025	1	0
+Alexis Mincieli	3/27/2025	1	0
+Allie Kelley	3/27/2025	1	0
+Amanda Smith	3/27/2025	1	0
+Ana Castillo	3/27/2025	1	0
+Andrivia Oliver	3/27/2025	2	0
+Brittany Vesey	3/27/2025	1	0
+BRYAN SCHMIEDESHOFF	3/27/2025	3	0
+Carter Moran	3/27/2025	1	0
+China Grove Middle	3/27/2025	201	0
+Dudley Shoals Elementary School	3/27/2025	146	0
+Elizabeth Vance	3/27/2025	1	0
+Erin beall	3/27/2025	1	0
+Erin Crutchfield	3/27/2025	2	0
+Frances House	3/27/2025	1	0
+Gabrielle Silk	3/27/2025	1	0
+Giselle Soto	3/27/2025	2	0
+H Wesley Hartsell	3/27/2025	1	0
+High Point Academy	3/27/2025	84	0
+Horrell Hill Elementary School	3/27/2025	0	0
+Irvin Elementary School	3/27/2025	122	0
+Jahdiya Steadman	3/27/2025	1	0
+James Baker	3/27/2025	2	0
+Jamie Cuccaro	3/27/2025	1	0
+Jessica Garmon	3/27/2025	1	0
+Jessica Newton	3/27/2025	1	0
+Karla Magana	3/27/2025	1	0
+Kendyl Barnhardt	3/27/2025	1	0
+Koontz Elementary	3/27/2025	0	0
+LOUIS BROWN JR	3/27/2025	1	0
+Madison Cobb	3/27/2025	1	0
+Maricela Martinez	3/27/2025	2	0
+Marybella Rodriguez	3/27/2025	1	0
+Melissa Whaley	3/27/2025	1	0
+Moniek Davis	3/27/2025	1	0
+Nichole Langford	3/27/2025	1	0
+Providence Day School	3/27/2025	18	0
+Sarah Weatherly	3/27/2025	1	0
+Sharon Cress	3/27/2025	1	0
+Stacy Griffin	3/27/2025	1	0
+Wanda Casey	3/27/2025	3	0
+West Middle School	3/27/2025	182	0
+William Sumter	3/27/2025	2	0
+Alliance Center for Education - Brightwalk	3/28/2025	25	0
+Berryhill Elementary	3/28/2025	55	-56
+Hopewell Middle	3/28/2025	0	0
+Jarrica Kirkpatrick	3/28/2025	0	56
+La France Elementary School	3/28/2025	48	0
+New Heights Middle School	3/28/2025	0	0
+Ronald E. McNair Elementary	3/28/2025	0	0
+Rudolph Gordon Elementary	3/28/2025	235	0
+Smart Kids Ballantyne	3/28/2025	19	0
+Smarty Pants Preschool	3/28/2025	31	0
+Trinity Episcopal School	3/28/2025	24	0
+University Meadows Elementary	3/28/2025	121	0
+Charlotte Latin School	4/1/2025	126	0
+Croft Community School	4/1/2025	55	0
+East Link Academy	4/1/2025	44	0
+First Presbyterian Church CDC	4/1/2025	21	0
+Hickory Ridge Elementary School	4/1/2025	234	0
+IDA Rankin Elementary School	4/1/2025	0	0
+Indian Land High School	4/1/2025	93	0
+Jenkins Elementary	4/1/2025	0	0
+River Oaks Academy	4/1/2025	0	0
+Toni Miller	4/1/2025	1	0
+Amber S	4/2/2025	1	0
+Anonymous Buyer	4/2/2025	2	0
+Arcadia Elementary School	4/2/2025	0	0
+Bonnie Cone Leadership Academy	4/2/2025	120	0
+Charles Black	4/2/2025	1	0
+Eve M	4/2/2025	1	0
+H.E. Corley Elementary School	4/2/2025	0	0
+Han Woods	4/2/2025	1	0
+Jacqueline Peebles	4/2/2025	30	0
+Luis Argeni	4/2/2025	2	0
+Samantha Burnette	4/2/2025	3	0
+Sterling Elementary	4/2/2025	0	0
+The St. Sophia School	4/2/2025	26	0
+Township Three Elementary School	4/2/2025	79	0
+Bethany Elementary	4/3/2025	0	0
+Briarwood Elementary School	4/3/2025	143	0
+Fletcher Elementary School	4/3/2025	89	0
+General Greene Elementary	4/3/2025	75	0
+St. Andrew Catholic School	4/3/2025	24	0
+Sugar Creek Elementary	4/3/2025	183	0
+White Knoll Elementary School	4/3/2025	96	0
+Alex Soltis	4/4/2025	1	0
+Alexis Sesmas	4/4/2025	2	0
+Alexis Sesmas cruz	4/4/2025	1	0
+Alisha Oliver	4/4/2025	1	0
+Amy Lisk	4/4/2025	1	0
+Amy Parker	4/4/2025	1	0
+Anonymous Buyer	4/4/2025	20	0
+Ashleigh Boan	4/4/2025	2	0
+Ashleigh Thomas	4/4/2025	1	0
+Ashley Atwood	4/4/2025	3	0
+Ashton Laws	4/4/2025	2	0
+Blaine Long	4/4/2025	2	0
+Blue Ridge Bridge	4/4/2025	21	0
+Brandon Aguilar	4/4/2025	2	0
+Caitlin Austin	4/4/2025	3	0
+Cameron Lamb	4/4/2025	1	0
+Camron Laws	4/4/2025	1	0
+Carrie Kerrick	4/4/2025	2	0
+Cody Shutt	4/4/2025	1	0
+Daphne Lowery	4/4/2025	2	0
+David Cox Road Elementary School	4/4/2025	88	0
+First Presbyterian Church CDC	4/4/2025	23	0
+Gabrielle Holcomb	4/4/2025	1	0
+Generations Academy Homeschool Co-Op	4/4/2025	0	0
+hannah ngo	4/4/2025	3	0
+Heather Blackwelder	4/4/2025	1	0
+Heather Hartsell	4/4/2025	1	0
+Isabel Cruz	4/4/2025	1	0
+Jessica Pyles	4/4/2025	1	0
+Kaitlyn Burris	4/4/2025	1	0
+Kelli Kranish	4/4/2025	2	0
+Kelly Kelly	4/4/2025	1	0
+Kim Hathcock	4/4/2025	1	0
+Kristen Furr	4/4/2025	1	0
+Lancaster Christian Academy	4/4/2025	0	0
+Leah Wright	4/4/2025	1	0
+Level Cross Elementary School	4/4/2025	73	0
+Linda Kott	4/4/2025	1	0
+Locust Elementary	4/4/2025	114	0
+Madison Pinkston	4/4/2025	1	0
+Mary Smith	4/4/2025	1	0
+Michael Barbee	4/4/2025	1	0
+Michael Mathews	4/4/2025	2	0
+michelle bobo	4/4/2025	1	0
+New Dimensions Charter	4/4/2025	130	0
+Polo Ridge Elementary School	4/4/2025	43	0
+Rama Road Elementary	4/4/2025	104	0
+Samantha Tucker	4/4/2025	1	0
+Sean Lambert	4/4/2025	1	0
+Shay Miller	4/4/2025	1	0
+Sheila Albritton	4/4/2025	2	0
+Stephanie Young	4/4/2025	2	0
+Susan Phifer	4/4/2025	1	0
+Tom Mathews	4/4/2025	1	0
+Traci Almond	4/4/2025	1	0
+Tracy Howard	4/4/2025	1	0
+W.A. Young Elementary	4/4/2025	0	0
+Wendy Smith	4/4/2025	1	0
+Winecoff Elementary School	4/4/2025	0	0
+Zach Roach	4/4/2025	1	0
+CHES Foundation	4/5/2025	15	0
+Jack and Jill of America	4/5/2025	0	0
+Andres Tolentin	4/7/2025	1	0
+Chelsey Smith	4/7/2025	2	0
+Chris Music	4/7/2025	1	0
+Covenant Classical School	4/7/2025	0	0
+David R Masten	4/7/2025	2	0
+Debbie Owens	4/7/2025	1	0
+East Mooresville Intermediate School	4/7/2025	133	0
+Forrest Hunt Elementary	4/7/2025	96	0
+Hilary White	4/7/2025	1	0
+Janele Music	4/7/2025	1	0
+Jay M. Robinson Middle School	4/7/2025	33	0
+Jessica Harris	4/7/2025	2	0
+Kayla Seigler	4/7/2025	2	0
+Leticia Velasquez	4/7/2025	1	0
+McKee Road Elementary	4/7/2025	71	0
+Megan Guffey	4/7/2025	1	0
+Poplin elementary	4/7/2025	137	0
+Priscilla blanton	4/7/2025	1	0
+River Bluff High School	4/7/2025	28	0
+Samantha Epley	4/7/2025	1	0
+Sandy Ridge Elementary	4/7/2025	142	0
+Shante Morrison	4/7/2025	1	0
+Shawn Maynard	4/7/2025	1	0
+W.A. Young Elementary	4/7/2025	57	0
+Whitewater Academy	4/7/2025	165	0
+Briarwood Academy	4/8/2025	0	0
+East Mooresville Intermediate School	4/8/2025	123	0
+Esperanza Global Academy	4/8/2025	0	0
+Forrest Hunt Elementary	4/8/2025	0	0
+Hampton Park Christian School	4/8/2025	0	0
+Hopkins Middle School Richland One School District	4/8/2025	152	-154
+Joseph W. Grier Academy	4/8/2025	129	0
+Providence Spring Elementary	4/8/2025	60	0
+Yolanda Robinson	4/8/2025	0	154
+Alaysia Barrett	4/9/2025	2	0
+Amanda Davis	4/9/2025	0	0
+American Renaissance School	4/9/2025	104	0
+Brookstone School	4/9/2025	26	0
+Cecilia Martinez	4/9/2025	1	0
+Clayton Garland	4/9/2025	1	0
+Cliffside Elementary School	4/9/2025	35	0
+DesMarie Kennings	4/9/2025	1	0
+East Burke High School	4/9/2025	0	0
+Greenview Elementary	4/9/2025	0	0
+Idlewild Elementary	4/9/2025	126	0
+Irvin Elementary School	4/9/2025	131	0
+Jacqueline Aldridge	4/9/2025	1	0
+Jerod Carpenter	4/9/2025	1	0
+Jessica Cline	4/9/2025	1	0
+Jill Michael	4/9/2025	2	0
+Jordan Killough	4/9/2025	1	0
+Karen Garcia	4/9/2025	1	0
+Kyle Sartin	4/9/2025	1	0
+Michael Talarico	4/9/2025	1	0
+Midway Elementary School	4/9/2025	0	0
+Mooresville High School	4/9/2025	42	0
+Nina Clark	4/9/2025	1	0
+Piney Grove Elementary School	4/9/2025	85	0
+Providence Spring Elementary	4/9/2025	60	0
+rebecca melton	4/9/2025	1	0
+Rebekah Ramsey	4/9/2025	1	0
+Robin Marlow	4/9/2025	1	0
+South Academy of International Languages	4/9/2025	17	0
+Susanna Riley	4/9/2025	1	0
+Teresa Oliva	4/9/2025	1	0
+TMSA Charlotte Elementary School	4/9/2025	0	0
+Veronica Yost	4/9/2025	1	0
+Winston-Salem Christian School	4/9/2025	29	0
+Ying Balanzar	4/9/2025	2	0
+Albemarle Middle School	4/10/2025	66	0
+Brookstone School	4/10/2025	0	0
+Chris Daley	4/10/2025	2	0
+Cliffside Elementary School	4/10/2025	0	0
+Endy Elemetary	4/10/2025	135	0
+Keowee Elementary	4/10/2025	0	0
+St James Elementary School	4/10/2025	116	0
+United Faith Christian Academy	4/10/2025	38	0
+Wesley Chapel Elementary	4/10/2025	166	0
+West Lake Preparatory Academy	4/10/2025	40	0
+Alison Hinson	4/11/2025	2	0
+Alissa Hall	4/11/2025	1	0
+Amber Canaan	4/11/2025	1	0
+Beauford High School	4/11/2025	17	0
+Bradley Phillips	4/11/2025	1	0
+Eric Montgomery	4/11/2025	1	0
+Haw Creek Elementary	4/11/2025	0	0
+Hickory Grove Elementary School	4/11/2025	0	0
+Jonathan Beckham	4/11/2025	1	0
+Kannapolis Middle School - Cabarrus Health Alliance	4/11/2025	40	0
+Kyle Rogers	4/11/2025	1	0
+Lancaster Christian Academy	4/11/2025	25	0
+Matt Schieler	4/11/2025	1	0
+Misty Miles	4/11/2025	1	0
+Paw Creek Elementary	4/11/2025	0	0
+Penny Chapel	4/11/2025	1	0
+playpalz Penegar	4/11/2025	1	0
+Sandy Grove Middle School	4/11/2025	115	0
+South Kilbourne Elementary	4/11/2025	0	0
+Southeast Middle School	4/11/2025	0	0
+Steven Anderson	4/11/2025	1	0
+Township Three Elementary School	4/11/2025	0	0
+Union Intermediate School	4/11/2025	0	0
+University Park Creative Arts	4/11/2025	44	0
+W.G. Sanders Middle	4/11/2025	0	0
+William Amos Hough High School	4/11/2025	0	0
+Community Christian Academy	4/14/2025	56	0
+Hayworth Christian School	4/14/2025	15	0
+Home Home	4/14/2025	1	0
+John Honeycutt	4/14/2025	1	0
+Robinson Elementary School	4/14/2025	95	0
+Tiffany Gibson	4/14/2025	1	0
+Victoria Redmond	4/14/2025	1	0
+Central Cabarrus High School	4/15/2025	0	0
+Duncan Chapel Elementary	4/15/2025	53	0
+Huntersville Homeschoolers	4/15/2025	0	0
+Phoenix Montessori Academy	4/15/2025	95	0
+Rama Road Elementary	4/15/2025	0	0
+Woodland Heights Elementary	4/15/2025	209	0
+AJ Whittenberg Elementary	4/16/2025	87	0
+Alliance Center for Education	4/16/2025	0	0
+Carolina Christian Academy	4/16/2025	44	0
+Etowah Elementary	4/16/2025	52	0
+Hagood Elementary	4/16/2025	0	0
+Keowee Elementary	4/16/2025	78	0
+Koontz Elementary	4/16/2025	0	0
+Liberty Middle School	4/16/2025	178	0
+Little Hands Preschool	4/16/2025	33	0
+Sherrills Ford Elementary	4/16/2025	0	0
+Sue Reynolds Elementary	4/16/2025	0	0
+Sunset Park Accelerated Studies	4/16/2025	0	0
+Amber Hollifield	4/17/2025	1	0
+Angel D Sherlin	4/17/2025	1	0
+Brooks Museums Magnet Elementary	4/17/2025	48	0
+East North Street Academy	4/17/2025	84	0
+Eastfield Global Magnet School	4/17/2025	44	0
+Elizabeth Chavez	4/17/2025	1	0
+Harrisburg Elementary	4/17/2025	175	0
+Heather R Mikkelsen	4/17/2025	1	0
+Hoppton Elementary	4/17/2025	67	0
+Jennifer Langefeld	4/17/2025	2	0
+Jeromy and Amber Pence	4/17/2025	2	0
+Joanna L Wu	4/17/2025	1	0
+Jonathan Griffin	4/17/2025	1	0
+Kim McIntosh	4/17/2025	1	0
+Lillian Harris	4/17/2025	1	0
+Sallie Altizer	4/17/2025	1	0
+Tom Kirkland	4/17/2025	1	0
+Valdese Elementary	4/17/2025	89	0
+West Oxford Elementary School	4/17/2025	56	0
+Central Carolina Technical College	4/18/2025	0	0
+Marjorie Grooms-Smalls	4/18/2025	1	0
+Smith Elementary	4/18/2025	45	0
+Tega Cay Elementary	4/18/2025	157	0
+Mike Kenney	4/19/2025	33	0
+White Knoll Elementary School	4/21/2025	0	0
+Hanes  Magnet Middle School	4/22/2025	0	-110
+Monique Nadine Ford	4/22/2025	0	110
+City of Hickory Parks and Rec	4/23/2025	28	0
+Midway Elementary School	4/23/2025	149	0
+Mint Hill Elementary	4/23/2025	44	0
+Petersburg Primary School	4/23/2025	0	0
+Piney Grove Elementary School	4/23/2025	83	0
+Trinity Episcopal School	4/23/2025	42	0
+Walter G Byers	4/23/2025	0	0
+Columbus Urban League	4/24/2025	0	0
+Elkin Elementary School	4/24/2025	108	0
+FairyLand Institute of Early Learning	4/24/2025	22	0
+Intellicor International Academy	4/24/2025	0	0
+Landis Elementary	4/24/2025	110	0
+UNCC Department of Biological Sciences	4/24/2025	20	0
+Winston-Salem Christian School	4/24/2025	49	0
+Ballentine Elementary	4/25/2025	0	0
+East Elementary School	4/25/2025	0	127
+East Iredell Elementary School	4/25/2025	167	-127
+Elizabeth Lane Elementary School	4/25/2025	170	0
+Generations Academy Homeschool Co-Op	4/25/2025	0	0
+Honea Path Elementary	4/25/2025	0	0
+Lake Myra Elementary	4/25/2025	0	0
+Midway Elementary School	4/25/2025	0	0
+Northview Baptist Academy	4/25/2025	0	0
+Notre Dame High School	4/25/2025	24	0
+Pineville Elementary School	4/25/2025	0	154
+Polo Ridge Elementary School	4/25/2025	0	0
+W.G. Sanders Middle	4/25/2025	52	0
+Bonnie Cone Classical Academy	4/28/2025	138	0
+Geiger Elementary School	4/28/2025	0	-25
+Kerisha McDuffie	4/28/2025	0	25
+St Martin De Porres Catholic School	4/28/2025	0	0
+Alexus Boykins	5/1/2025	1	0
+Amanda Pittman	5/1/2025	1	0
+Azhane Walker	5/1/2025	0	72
+Berean Junior Academy	5/1/2025	0	0
+Bianca Kaczor	5/1/2025	1	0
+Elizabeth Traditional Elementary School	5/1/2025	0	0
+Intellicor International Academy	5/1/2025	0	-72
+Johnson C. Smith University	5/1/2025	17	0
+Leslie Padgett	5/1/2025	1	0
+Maria Zambrano	5/1/2025	1	0
+Meck Pre-K	5/1/2025	19	0
+Tiara Miller	5/1/2025	2	0
+West McDowell Middle School	5/1/2025	157	0
+Yates Mill Elementary School	5/1/2025	95	0
+Allison Clark	5/2/2025	42	0
+Amelia Miraglia	5/2/2025	1	0
+Bethany Johnson	5/2/2025	1	0
+Bethel Elementary	5/2/2025	123	0
+Bhagya Rekha Valleru	5/2/2025	1	0
+Brianna Johnson	5/2/2025	1	0
+Brooklyn Springs Elementary School	5/2/2025	0	0
+Caitlin Hinson	5/2/2025	2	0
+Carly Forshee	5/2/2025	1	0
+Caroline Little	5/2/2025	1	0
+Cassey Reid	5/2/2025	1	0
+Charles Girault	5/2/2025	1	0
+Christel Lemmond	5/2/2025	1	0
+Cielo Sides	5/2/2025	18	0
+Cody Melton	5/2/2025	1	0
+Crystal Siffford	5/2/2025	1	0
+Dionna Cyprian	5/2/2025	1	0
+Donna Slover	5/2/2025	1	0
+Elicia Jones	5/2/2025	1	0
+Elise Wild	5/2/2025	1	0
+Funke Ojo	5/2/2025	1	0
+Hayley Wood	5/2/2025	1	0
+Heather Brown	5/2/2025	1	0
+Hickory Grove Elementary School	5/2/2025	91	0
+Jenny Williams	5/2/2025	1	0
+Jessica Pacek	5/2/2025	1	0
+Johnson C. Smith University	5/2/2025	23	0
+Jordan Reynolds	5/2/2025	2	0
+Josh Piner	5/2/2025	2	0
+Kelley Waldrop	5/2/2025	1	0
+Kelli Holt	5/2/2025	1	0
+Kevin Departhy	5/2/2025	1	0
+Kymberly Caldwell	5/2/2025	1	0
+Lauren Sciortino	5/2/2025	1	0
+Lauren Speight	5/2/2025	1	0
+Lindsey Glosson	5/2/2025	1	0
+Madison Hill	5/2/2025	1	0
+Mandy Couch	5/2/2025	1	0
+Meghan Atkisson	5/2/2025	1	0
+Michelle Smith	5/2/2025	1	0
+Mint Hill Elementary	5/2/2025	0	0
+MonÃ©t Booker	5/2/2025	1	0
+Nahara Soza	5/2/2025	1	0
+Natasha Allen	5/2/2025	1	0
+Nicholas Barrett	5/2/2025	1	0
+River Oaks Academy	5/2/2025	75	0
+Rosa A Navarro Torres	5/2/2025	1	0
+Samantha Dominguez	5/2/2025	2	0
+Sarah Morris	5/2/2025	1	0
+Tiffany Sellers	5/2/2025	1	0
+TMSA Charlotte Elementary School	5/2/2025	80	0
+Unity Classical Charter School	5/2/2025	126	0
+Wei Kelly	5/2/2025	2	0
+Wendy Hood	5/2/2025	1	0
+Wilburn C Oziogu	5/2/2025	1	0
+William Privette	5/2/2025	1	0
+Winterfield Elementary School	5/2/2025	88	0
+Aubrey Moss	5/5/2025	1	0
+C.T. Walker Magnet	5/5/2025	108	0
+De'Jun Spann	5/5/2025	2	0
+Harold Walton	5/5/2025	2	0
+Jennifer Davis	5/5/2025	1	0
+Kenyel Smith	5/5/2025	1	0
+Marcus Walker	5/5/2025	2	0
+Tiwanna Tiller	5/5/2025	2	0
+AJ Whittenberg Elementary	5/6/2025	90	0
+Jackson Creek Elementary	5/6/2025	0	0
+Robert B Glenn High School	5/6/2025	0	0
+Hopkins Elementary School	5/7/2025	0	0
+JH Gunn Elementary School	5/7/2025	0	0
+Koontz Elementary	5/7/2025	45	0
+Our Lady of Grace Catholic Church	5/7/2025	35	0
+Pageland Elementary School	5/7/2025	0	0
+Victory Christian Center School	5/7/2025	0	0
+Christ Classical Academy	5/8/2025	17	0
+Devonshire Elementary	5/8/2025	77	0
+Hopkins Elementary School	5/8/2025	32	0
+JH Gunn Elementary School	5/8/2025	0	0
+Kelli Kuhn	5/8/2025	44	0
+Mabel School	5/8/2025	18	0
+Starboard Christian Academy	5/8/2025	65	0
+Tuckaseegee Elementary	5/8/2025	0	0
+Alleluia Community School	5/9/2025	0	0
+Brooklyn Springs Elementary School	5/9/2025	0	0
+Burnside Elementary	5/9/2025	0	0
+Elizabeth Traditional Elementary School	5/9/2025	85	0
+Forest City-Dunbar Elementary	5/9/2025	89	0
+South Kilbourne Elementary	5/9/2025	39	0
+Thales Academy Waxhaw	5/9/2025	117	0
+The Halton School	5/9/2025	0	0
+Thomasboro Academy	5/9/2025	0	0
+Addison Kon	5/12/2025	1	0
+India Hook Elementary School	5/12/2025	0	0
+Myers Park Presbyterian Weekday School	5/12/2025	20	0
+University Meadows Elementary	5/12/2025	0	0
+Charlene Osborne	5/13/2025	2	0
+Greensboro Islamic Academy	5/13/2025	38	0
+Hopkins Elementary School	5/13/2025	0	0
+Inman Intermediate School	5/13/2025	44	0
+Mallard Creek STEM Academy	5/13/2025	122	0
+Rysheka Chapman	5/13/2025	1	0
+Armondo Worthy	5/14/2025	1	0
+Bank of America	5/14/2025	19	0
+Betsy Wolfe	5/14/2025	1	0
+Casey Fisher	5/14/2025	1	0
+Cindy Garcia-Salamanca	5/14/2025	1	0
+Geiger Elementary	5/14/2025	0	0
+Geiger Elementary School	5/14/2025	25	0
+Grace Academy	5/14/2025	31	0
+Jacob Jarvis	5/14/2025	1	0
+Jonelle Stitt	5/14/2025	95	0
+Khadija Morrow	5/14/2025	0	0
+Kiana Parker	5/14/2025	1	0
+Lake Norman Charter School	5/14/2025	158	0
+Mallard Creek STEM Academy	5/14/2025	119	0
+Michelle Nettles	5/14/2025	0	0
+Mindy DeLozier	5/14/2025	1	0
+nelson krueger	5/14/2025	2	0
+rose ma	5/14/2025	1	0
+Sandra Gonzalez	5/14/2025	1	0
+Shalee Beddingfield	5/14/2025	1	0
+Shandi Gray	5/14/2025	1	0
+Shannondale L Page	5/14/2025	1	0
+The Mountain Community School	5/14/2025	23	0
+American Leadership Academy	5/15/2025	113	0
+April Fogle	5/15/2025	1	0
+Arretta Gatlin	5/15/2025	1	0
+Brooklyn Springs Elementary School	5/15/2025	48	0
+C henry Holland	5/15/2025	1	0
+Damien McNeill	5/15/2025	2	0
+Flat Rock Elementary	5/15/2025	71	0
+Griggs Road Elementary	5/15/2025	94	0
+KRISTEN L CASON	5/15/2025	1	0
+Mallard Creek STEM Academy	5/15/2025	0	0
+Marlina Vindigni	5/15/2025	1	0
+Melida Baldera	5/15/2025	3	0
+Regina Stewart	5/15/2025	1	0
+Richland School District Two	5/15/2025	116	0
+Sharon Elementary	5/15/2025	17	0
+Tammy Williams	5/15/2025	1	0
+Tina Tina	5/15/2025	1	0
+Westabou Montessori School	5/15/2025	21	0
+Yuderky Valerio	5/15/2025	1	0
+Alleluia Community School	5/16/2025	27	0
+Anthoni Hayes	5/16/2025	1	0
+Antwon Kanipe	5/16/2025	1	0
+Carlissa pitts	5/16/2025	1	0
+Charleston Christian School	5/16/2025	42	0
+Crystal  Lane Leveille	5/16/2025	1	0
+Diddneisha Miller	5/16/2025	1	0
+Dionna Cyprian	5/16/2025	1	0
+Fort Mill High School	5/16/2025	0	0
+Kearston Edwards	5/16/2025	1	0
+Kiana McCotter	5/16/2025	1	0
+LaShawn Best	5/16/2025	1	0
+Leaphart Elementary	5/16/2025	95	0
+Midland Trail Elementary School	5/16/2025	35	0
+Millingport Elementary	5/16/2025	0	0
+Newell Elementary	5/16/2025	0	0
+Queen City STEM School	5/16/2025	82	0
+Queens Grant High School	5/16/2025	18	0
+Ruthmary Solis-Lopez	5/16/2025	1	0
+Shaniqua Horstead	5/16/2025	1	0
+South Kilbourne Elementary	5/16/2025	0	0
+Summit Elementary	5/16/2025	124	0
+Victoria Jackson	5/16/2025	1	0
+Windsor Park Elementary School	5/16/2025	0	0
+Emereau Bladen Charter school	5/19/2025	0	0
+Green Valley Elementary Schoo1	5/19/2025	0	33
+Green Valley Elementary School	5/19/2025	30	-33
+Heath Springs Elementary	5/19/2025	0	0
+James Love Elementary	5/19/2025	0	0
+Jessica Willis	5/19/2025	1	0
+The Halton School	5/19/2025	46	0
+Tuckaseegee Elementary	5/19/2025	0	0
+Alicia cohen	5/20/2025	111	0
+Alicia Cohen- Buist Academy	5/20/2025	5	0
+Emereau Bladen Charter school	5/20/2025	41	0
+Geiger Elementary	5/20/2025	60	0
+Mineral Springs Middle School	5/20/2025	0	0
+Briarwood Academy	5/21/2025	0	0
+Keonia Gilliard	5/21/2025	0	111
+Liberty STEAM Charter School	5/21/2025	0	0
+Marc Raye	5/21/2025	0	0
+St. James-Gaillard Elementary School	5/21/2025	111	-111
+Alicia cohen	5/22/2025	0	0
+Anna Czerniak	5/22/2025	1	0
+Annie Wilson	5/22/2025	1	0
+Asheville Catholic School	5/22/2025	56	0
+Berewick Elementary	5/22/2025	0	0
+Brianna Clyburn	5/22/2025	1	0
+Catherine Smith	5/22/2025	1	0
+Dawn Bennett	5/22/2025	1	0
+Desiah Mcneill	5/22/2025	1	0
+Donyis Bell	5/22/2025	1	0
+Erin Sumner	5/22/2025	1	0
+GÃ©nesis Briones	5/22/2025	1	0
+Gina Shinn	5/22/2025	1	0
+Hagood Elementary	5/22/2025	0	0
+Jeasica Perry	5/22/2025	1	0
+Jeffrey Watson	5/22/2025	2	0
+Jerome Fleming	5/22/2025	1	0
+Katie Werr	5/22/2025	1	0
+Knights View Elementary	5/22/2025	115	0
+Krista Harris	5/22/2025	1	0
+Latoya Bass	5/22/2025	1	0
+Mallard Creek Elementary School	5/22/2025	96	0
+Marc Raye	5/22/2025	0	0
+Rosa Maria de la Asuncion Villaverde	5/22/2025	1	0
+Shea Peralta	5/22/2025	1	0
+Sherlina Blakeney	5/22/2025	1	0
+Sherrell Brown	5/22/2025	1	0
+Shevalo Hunter	5/22/2025	1	0
+Tajohnna Jones	5/22/2025	1	0
+Torrence Creek Elementary	5/22/2025	113	0
+Valentina Ochoa Silva	5/22/2025	1	0
+Carver-Lyon Elementary School	5/23/2025	0	0
+Chicora Elementary School	5/23/2025	40	0
+Meck Pre-K	5/23/2025	0	0
+Catawba Indian Nation	5/27/2025	28	0
+Huntersville Homeschoolers	5/27/2025	17	0
+Sparta Elementary School	5/27/2025	52	0
+Aggie Academy	5/28/2025	0	0
+eva citalan	5/28/2025	2	0
+Hendersonville Middle School	5/28/2025	161	0
+Steele Creek Preparatory Academy	5/28/2025	28	0
+ACE Academy Charter	5/29/2025	128	0
+Al Anderson	5/29/2025	1	0
+Ashley Green	5/29/2025	1	0
+Catawba Indian Nation	5/29/2025	37	0
+Derrico Jordan	5/29/2025	1	0
+Fred Majors	5/29/2025	1	0
+Okina Mcran	5/29/2025	1	0
+Porsha Brooks	5/29/2025	1	0
+Sabrina Shepherd	5/29/2025	1	0
+Steele Creek Preparatory Academy	5/29/2025	44	0
+Tenille Banner	5/29/2025	2	0
+Tommy Miller	5/29/2025	1	0
+Tuckaseegee Elementary	5/29/2025	104	0
+Mallard Creek Elementary School	5/30/2025	0	0
+Matthews Charter Academy	5/30/2025	104	0
+Meck Pre-K	5/30/2025	0	0
+Rayshawn Watson	5/30/2025	1	0
+Steele Creek Preparatory Academy	5/30/2025	39	0
+Upstate Kids	6/3/2025	110	0
+Cindy Pauley	6/6/2025	0	77
+Fairfield County Parks and Recreation	6/6/2025	0	-77
+Melody Mims-Wise	6/7/2025	0	0
+Lincoln County School of Technology	6/9/2025	0	0
+Tashiecia Reed	6/9/2025	17	0
+Berewick Elementary	6/10/2025	143	0
+Summer Wonder Program	6/10/2025	0	0
+Clay Hill	6/12/2025	0	0
+Cramerton Christian Academy	6/12/2025	0	0
+Harleyville Elementary School -Amber	6/12/2025	0	0
+Woodland Middle	6/12/2025	0	0
+Alexandra Mason	6/13/2025	0	23
+Bridgemill Kindercare Mason	6/13/2025	23	-23
+Everbrook Academy	6/16/2025	28	0
+John Kober	6/16/2025	2	0
+Leanne Mattson	6/16/2025	1	0
+Martin L Johnson	6/16/2025	2	0
+Sarah Houle	6/16/2025	1	0
+Second Baptist Daycare & Development	6/16/2025	-1	0
+Shekeyra Andrews	6/16/2025	28	0
+Casey Mullis	6/17/2025	0	-10
+Everbrook Academy	6/17/2025	28	0
+Justice Kids Academy	6/17/2025	0	0
+Lincoln County School of Technology	6/17/2025	26	0
+Sara Brooking	6/17/2025	0	10
+Smart Kids Lambeth	6/17/2025	0	0
+Swain County Schools	6/17/2025	0	0
+The Sunshine House	6/17/2025	0	0
+Corey Family Martial Arts	6/18/2025	50	0
+Joe Lamar	6/18/2025	31	0
+Second Baptist Daycare & Development	6/18/2025	-9	0
+Shekeyra Andrews	6/18/2025	28	0
+Childtime of Huntersville	6/19/2025	24	0
+Field of Dreams Edgewater	6/19/2025	19	0
+GraceLife Academy	6/19/2025	22	0
+First Presbyterian Church CDC	6/20/2025	29	0
+Northern Regional Recreation Center	6/20/2025	38	0
+Patrice Commodore	6/20/2025	15	0
+Upstate Kids	6/20/2025	112	0
+Westside Community Foundation	6/20/2025	0	0
+Cristy Cummings	6/21/2025	1	0
+Girl Scout Troop	6/21/2025	17	0
+Hayley Lawrence	6/21/2025	1	0
+Jessica Hudome	6/21/2025	1	0
+Julia Harrison	6/21/2025	1	0
+Lauren Mooneyhan	6/21/2025	1	0
+Melissa Rushing	6/21/2025	1	0
+Morgan Ealey	6/21/2025	1	0
+Stephanie Adams	6/21/2025	2	0
+Kidville-Kovar CDC	6/23/2025	22	0
+Amy Kim	6/24/2025	4	0
+Justice Kids Academy	6/24/2025	17	0
+Gym Fit Sports Summer Camp	6/25/2025	20	0
+Kinder care day Care	6/25/2025	0	0
+Mecklenburg County Parks and Recreation	6/25/2025	38	0
+Upperroom Kids	6/25/2025	0	0
+Amber Jennings	6/26/2025	-35	0
+Christyn Gilliam	6/26/2025	24	0
+Clay Hill	6/26/2025	36	0
+Harleyville Elementary School -Amber	6/26/2025	35	0
+Know 2 Cherokee	6/26/2025	33	0
+Monroe Charter Academy	6/26/2025	56	0
+Rolanda Council	6/26/2025	1	0
+Smart Kids Mooresville	6/26/2025	27	0
+Smart Kids South Point	6/26/2025	28	0
+Westerly Hills Academy	6/26/2025	78	0
+Invisible Gemz	6/27/2025	37	0
+McCrorey YMCA	6/27/2025	135	0
+Washington Outreach Ministry	6/27/2025	30	0
+YWCA - Sunridge	6/27/2025	17	0
+Angel Richardson	6/28/2025	17	0
+Winthrop University Eagle Stem Scholars	6/28/2025	33	0
+Briarwood Academy	6/30/2025	95	0
+Metrolina Christian Academy Summer Day Camp	6/30/2025	0	0
+`.trim();
+        // ===================================================================
+
+        let appData = null;
+
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const csvText = e.target.result;
+                processData(csvText);
+            };
+            reader.onerror = function() {
+                showError('Error reading file. Please try again.');
+            };
+            reader.readAsText(file);
+        }
+
+        function processData(csvText) {
+            const lines = csvText.trim().split('\n').slice(1);
+            
+            const records = lines.map(line => {
+                const match = line.match(/"([^"]+)",(\d{4}-\d{2}-\d{2}),(-?\d+),(-?\d+)/);
+                if (!match) return null;
                 
-                // All libraries loaded, start the app
-                initApp();
-            }
-            
-            function initApp() {
-                const { useState, useMemo } = React;
-                const { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } = Recharts;
-                const { Calendar, Users, TrendingUp } = lucide;
-
-                const FieldTripDashboard = () => {
-                    const [fileData, setFileData] = useState(null);
-                    const [error, setError] = useState(null);
-
-                    const handleFileUpload = (event) => {
-                        const uploadedFile = event.target.files[0];
-                        if (uploadedFile) {
-                            const reader = new FileReader();
-                            reader.onload = (e) => {
-                                setFileData(e.target.result);
-                                setError(null);
-                            };
-                            reader.onerror = () => {
-                                setError('Error reading file. Please try again.');
-                            };
-                            reader.readAsText(uploadedFile);
-                        }
-                    };
-
-                    const data = useMemo(() => {
-                        if (!fileData) return { records: [], chaperones: [], organizations: [] };
-
-                        const lines = fileData.trim().split('\n').slice(1);
-                        
-                        const records = lines.map(line => {
-                            const match = line.match(/"([^"]+)",(\d{4}-\d{2}-\d{2}),(-?\d+),(-?\d+)/);
-                            if (!match) return null;
-                            
-                            const [, name, dateStr, qty, heldQty] = match;
-                            const totalQty = parseInt(qty) + parseInt(heldQty);
-                            
-                            const [year, month, day] = dateStr.split('-').map(Number);
-                            const date = new Date(Date.UTC(year, month - 1, day));
-                            
-                            return {
-                                name: name.trim(),
-                                date: date,
-                                dateStr: dateStr,
-                                quantity: parseInt(qty),
-                                heldQuantity: parseInt(heldQty),
-                                totalQuantity: totalQty
-                            };
-                        }).filter(r => r && r.totalQuantity > 0);
-
-                        const isChaperoneName = (name) => {
-                            const nameLower = name.toLowerCase();
-                            const orgKeywords = ['school', 'elementary', 'middle', 'high', 'academy', 'center', 
-                                                'district', 'program', 'church', 'college', 'university', 
-                                                'charter', 'christian', 'catholic', 'preschool', 'daycare',
-                                                'ymca', 'ywca', 'learning', 'education', 'prep', 'steam',
-                                                'foundation', 'association', 'institute', 'troop', 'homeschool'];
-                            
-                            const hasOrgKeyword = orgKeywords.some(keyword => nameLower.includes(keyword));
-                            const hasTwoNames = name.split(' ').length >= 2 && name.split(' ').length <= 5;
-                            
-                            return (!hasOrgKeyword && hasTwoNames) || name === 'Anonymous Buyer';
-                        };
-
-                        const chaperones = records.filter(r => isChaperoneName(r.name));
-                        const organizations = records.filter(r => !isChaperoneName(r.name));
-
-                        return { records, chaperones, organizations };
-                    }, [fileData]);
-
-                    const monthlyData = useMemo(() => {
-                        const months = {};
-                        data.records.forEach(record => {
-                            const monthKey = record.dateStr.slice(0, 7);
-                            const monthLabel = new Intl.DateTimeFormat('en-US', { year: 'numeric', month: 'short', timeZone: 'UTC' }).format(record.date);
-                            if (!months[monthKey]) {
-                                months[monthKey] = { month: monthLabel, guests: 0, bookings: 0, sortKey: monthKey };
-                            }
-                            months[monthKey].guests += record.totalQuantity;
-                            months[monthKey].bookings += 1;
-                        });
-                        
-                        return Object.values(months).sort((a, b) => a.sortKey.localeCompare(b.sortKey));
-                    }, [data]);
-
-                    const dayOfWeekData = useMemo(() => {
-                        const days = { Monday: 0, Tuesday: 0, Wednesday: 0, Thursday: 0, Friday: 0, Saturday: 0, Sunday: 0 };
-                        const dayGroups = { Monday: 0, Tuesday: 0, Wednesday: 0, Thursday: 0, Friday: 0, Saturday: 0, Sunday: 0 };
-                        const dayOrder = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-                        
-                        data.records.forEach(record => {
-                            const dayName = new Intl.DateTimeFormat('en-US', { weekday: 'long', timeZone: 'UTC' }).format(record.date);
-                            days[dayName] += record.totalQuantity;
-                            dayGroups[dayName] += 1;
-                        });
-                        
-                        return dayOrder.map(day => ({ 
-                            day, 
-                            guests: days[day],
-                            groups: dayGroups[day]
-                        })).filter(d => d.guests > 0);
-                    }, [data]);
-
-                    const dailyData = useMemo(() => {
-                        const days = {};
-                        data.records.forEach(record => {
-                            const dayKey = record.dateStr;
-                            if (!days[dayKey]) {
-                                days[dayKey] = { date: dayKey, guests: 0, bookings: 0, sortKey: dayKey };
-                            }
-                            days[dayKey].guests += record.totalQuantity;
-                            days[dayKey].bookings += 1;
-                        });
-                        
-                        return Object.values(days).sort((a, b) => a.sortKey.localeCompare(b.sortKey));
-                    }, [data]);
-
-                    const groupBreakdown = useMemo(() => {
-                        const groups = {};
-                        
-                        data.organizations.forEach(record => {
-                            if (!groups[record.name]) {
-                                groups[record.name] = {
-                                    name: record.name,
-                                    visits: [],
-                                    totalGuests: 0,
-                                    visitCount: 0
-                                };
-                            }
-                            groups[record.name].visits.push({
-                                date: record.dateStr,
-                                guests: record.totalQuantity
-                            });
-                            groups[record.name].totalGuests += record.totalQuantity;
-                            groups[record.name].visitCount += 1;
-                        });
-                        
-                        Object.values(groups).forEach(group => {
-                            group.visits.sort((a, b) => a.date.localeCompare(b.date));
-                        });
-                        
-                        return Object.values(groups).sort((a, b) => b.totalGuests - a.totalGuests);
-                    }, [data]);
-
-                    const metrics = useMemo(() => {
-                        const totalGuests = data.records.reduce((sum, r) => sum + r.totalQuantity, 0);
-                        const totalBookings = data.organizations.length;
-                        const chaperoneCount = data.chaperones.reduce((sum, r) => sum + r.totalQuantity, 0);
-                        const avgGroupSize = totalBookings > 0 ? totalGuests / totalBookings : 0;
-
-                        return { totalGuests, totalBookings, chaperoneCount, avgGroupSize };
-                    }, [data]);
-
-                    const keyInsights = useMemo(() => {
-                        const monthlyGuests = {};
-                        data.records.forEach(record => {
-                            const monthKey = record.dateStr.slice(0, 7);
-                            const monthName = new Intl.DateTimeFormat('en-US', { month: 'long', timeZone: 'UTC' }).format(record.date);
-                            if (!monthlyGuests[monthName]) {
-                                monthlyGuests[monthName] = 0;
-                            }
-                            monthlyGuests[monthName] += record.totalQuantity;
-                        });
-                        
-                        const sortedMonths = Object.entries(monthlyGuests).sort((a, b) => b[1] - a[1]);
-                        const peakMonth1 = sortedMonths[0] || ['', 0];
-                        const peakMonth2 = sortedMonths[1] || ['', 0];
-                        const peakTraffic = ((peakMonth1[1] + peakMonth2[1]) / metrics.totalGuests * 100).toFixed(0);
-
-                        const totalVisits = groupBreakdown.reduce((sum, g) => sum + g.visitCount, 0);
-                        const uniqueOrgs = groupBreakdown.length;
-
-                        const top10Guests = groupBreakdown.slice(0, 10).reduce((sum, g) => sum + g.totalGuests, 0);
-                        const top10Percentage = ((top10Guests / metrics.totalGuests) * 100).toFixed(0);
-
-                        const multiVisitOrgs = groupBreakdown.filter(g => g.visitCount > 1);
-                        const multiVisitGuests = multiVisitOrgs.reduce((sum, g) => sum + g.totalGuests, 0);
-                        const multiVisitPercentage = ((multiVisitGuests / metrics.totalGuests) * 100).toFixed(0);
-
-                        const quarters = {
-                            'Q1 (Jan-Mar)': { guests: 0, months: ['01', '02', '03'] },
-                            'Q2 (Apr-Jun)': { guests: 0, months: ['04', '05', '06'] },
-                            'Q3 (Jul-Sep)': { guests: 0, months: ['07', '08', '09'] },
-                            'Q4 (Oct-Dec)': { guests: 0, months: ['10', '11', '12'] }
-                        };
-
-                        data.records.forEach(record => {
-                            const month = record.dateStr.slice(5, 7);
-                            Object.entries(quarters).forEach(([qName, qData]) => {
-                                if (qData.months.includes(month)) {
-                                    qData.guests += record.totalQuantity;
-                                }
-                            });
-                        });
-                        
-                        return {
-                            peakMonth1: peakMonth1[0],
-                            peakMonth1Count: peakMonth1[1],
-                            peakMonth2: peakMonth2[0],
-                            peakMonth2Count: peakMonth2[1],
-                            peakTraffic,
-                            top10Percentage,
-                            multiVisitOrgs: multiVisitOrgs.length,
-                            multiVisitPercentage,
-                            quarters
-                        };
-                    }, [data, metrics, groupBreakdown]);
-
-                    if (!fileData) {
-                        return React.createElement('div', { className: 'w-full bg-gray-50 p-6 min-h-screen flex items-center justify-center' },
-                            React.createElement('div', { className: 'text-center' },
-                                React.createElement('div', { className: 'bg-white rounded-lg shadow-sm p-8 max-w-md' },
-                                    React.createElement('h2', { className: 'text-xl font-bold text-gray-900 mb-4' }, 'Upload CSV File'),
-                                    React.createElement('p', { className: 'text-gray-600 mb-6' }, 'Please upload your consolidated field trips CSV file to view the dashboard.'),
-                                    React.createElement('input', {
-                                        type: 'file',
-                                        accept: '.csv',
-                                        onChange: handleFileUpload,
-                                        className: 'block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100'
-                                    }),
-                                    error && React.createElement('p', { className: 'text-red-500 text-sm mt-4' }, error)
-                                )
-                            )
-                        );
-                    }
-
-                    return React.createElement('div', { className: 'w-full bg-gray-50 p-6' },
-                        React.createElement('div', { className: 'max-w-7xl mx-auto' },
-                            React.createElement('div', { className: 'bg-white rounded-lg shadow-sm p-6 mb-6' },
-                                React.createElement('h1', { className: 'text-3xl font-bold text-gray-900 mb-2' }, 'Field Trip Analytics Dashboard'),
-                                React.createElement('p', { className: 'text-gray-600' }, 'Fiscal Year 2025 (July 1, 2024 - June 30, 2025)')
-                            ),
-
-                            React.createElement('div', { className: 'grid grid-cols-1 md:grid-cols-4 gap-4 mb-6' },
-                                React.createElement('div', { className: 'bg-white rounded-lg shadow-sm p-6' },
-                                    React.createElement('div', { className: 'flex items-center justify-between' },
-                                        React.createElement('div', null,
-                                            React.createElement('p', { className: 'text-sm text-gray-600 mb-1' }, 'Total Guests'),
-                                            React.createElement('p', { className: 'text-3xl font-bold text-blue-600' }, metrics.totalGuests.toLocaleString())
-                                        ),
-                                        React.createElement(Users, { className: 'w-12 h-12 text-blue-200' })
-                                    )
-                                ),
-                                React.createElement('div', { className: 'bg-white rounded-lg shadow-sm p-6' },
-                                    React.createElement('div', { className: 'flex items-center justify-between' },
-                                        React.createElement('div', null,
-                                            React.createElement('p', { className: 'text-sm text-gray-600 mb-1' }, 'Unique Groups'),
-                                            React.createElement('p', { className: 'text-3xl font-bold text-indigo-600' }, groupBreakdown.length)
-                                        ),
-                                        React.createElement(Calendar, { className: 'w-12 h-12 text-indigo-200' })
-                                    )
-                                ),
-                                React.createElement('div', { className: 'bg-white rounded-lg shadow-sm p-6' },
-                                    React.createElement('div', { className: 'flex items-center justify-between' },
-                                        React.createElement('div', null,
-                                            React.createElement('p', { className: 'text-sm text-gray-600 mb-1' }, 'Total Bookings'),
-                                            React.createElement('p', { className: 'text-3xl font-bold text-green-600' }, metrics.totalBookings)
-                                        ),
-                                        React.createElement(Calendar, { className: 'w-12 h-12 text-green-200' })
-                                    )
-                                ),
-                                React.createElement('div', { className: 'bg-white rounded-lg shadow-sm p-6' },
-                                    React.createElement('div', { className: 'flex items-center justify-between' },
-                                        React.createElement('div', null,
-                                            React.createElement('p', { className: 'text-sm text-gray-600 mb-1' }, 'Avg Group Size'),
-                                            React.createElement('p', { className: 'text-3xl font-bold text-orange-600' }, Math.round(metrics.avgGroupSize))
-                                        ),
-                                        React.createElement(TrendingUp, { className: 'w-12 h-12 text-orange-200' })
-                                    )
-                                )
-                            ),
-
-                            React.createElement('div', { className: 'bg-white rounded-lg shadow-sm p-6 mb-6' },
-                                React.createElement('h2', { className: 'text-2xl font-bold text-gray-900 mb-6' }, 'Key Metrics'),
-                                React.createElement('div', { className: 'space-y-4' },
-                                    React.createElement('div', { className: 'bg-blue-50 rounded-lg p-5' },
-                                        React.createElement('h3', { className: 'text-lg font-semibold text-blue-900 mb-2' }, 'Peak Seasons'),
-                                        React.createElement('p', { className: 'text-gray-700' },
-                                            keyInsights.peakMonth1, ' (', keyInsights.peakMonth1Count.toLocaleString(), ') and ',
-                                            keyInsights.peakMonth2, ' (', keyInsights.peakMonth2Count.toLocaleString(), ') accounted for ',
-                                            React.createElement('span', { className: 'font-bold' }, keyInsights.peakTraffic, '% of annual traffic'), '.'
-                                        )
-                                    ),
-                                    React.createElement('div', { className: 'bg-green-50 rounded-lg p-5' },
-                                        React.createElement('h3', { className: 'text-lg font-semibold text-green-900 mb-2' }, 'Customer Loyalty'),
-                                        React.createElement('p', { className: 'text-gray-700' },
-                                            React.createElement('span', { className: 'font-bold' },
-                                                keyInsights.multiVisitOrgs, ' organizations (',
-                                                ((keyInsights.multiVisitOrgs / groupBreakdown.length) * 100).toFixed(0), '%)'
-                                            ),
-                                            ' returned for multiple visits, generating ',
-                                            React.createElement('span', { className: 'font-bold' }, keyInsights.multiVisitPercentage, '% of total attendance'), '.'
-                                        )
-                                    ),
-                                    React.createElement('div', { className: 'bg-amber-50 rounded-lg p-5' },
-                                        React.createElement('h3', { className: 'text-lg font-semibold text-amber-900 mb-2' }, 'Top Customer Concentration'),
-                                        React.createElement('p', { className: 'text-gray-700' },
-                                            'Top 10 organizations represent ',
-                                            React.createElement('span', { className: 'font-bold' }, keyInsights.top10Percentage, '% of total visitors'),
-                                            ', indicating strong relationships with key partners.'
-                                        )
-                                    ),
-                                    React.createElement('div', { className: 'grid grid-cols-2 md:grid-cols-4 gap-4 mt-6' },
-                                        Object.entries(keyInsights.quarters).map(([quarter, quarterData]) =>
-                                            React.createElement('div', { key: quarter, className: 'bg-gray-50 rounded-lg p-4 text-center' },
-                                                React.createElement('div', { className: 'text-sm text-gray-600 mb-1' }, quarter),
-                                                React.createElement('div', { className: 'text-2xl font-bold text-gray-900' }, quarterData.guests.toLocaleString()),
-                                                React.createElement('div', { className: 'text-xs text-gray-500 mt-1' },
-                                                    ((quarterData.guests / metrics.totalGuests) * 100).toFixed(0), '% of annual'
-                                                )
-                                            )
-                                        )
-                                    )
-                                )
-                            ),
-
-                            React.createElement('div', { className: 'bg-white rounded-lg shadow-sm p-6 mb-6' },
-                                React.createElement('h2', { className: 'text-xl font-bold text-gray-900 mb-4' }, 'Monthly Guest Trends'),
-                                React.createElement(ResponsiveContainer, { width: '100%', height: 300 },
-                                    React.createElement(LineChart, { data: monthlyData },
-                                        React.createElement(CartesianGrid, { strokeDasharray: '3 3' }),
-                                        React.createElement(XAxis, { dataKey: 'month' }),
-                                        React.createElement(YAxis, null),
-                                        React.createElement(Tooltip, null),
-                                        React.createElement(Legend, null),
-                                        React.createElement(Line, { type: 'monotone', dataKey: 'guests', stroke: '#0088FE', strokeWidth: 2, name: 'Total Guests' })
-                                    )
-                                )
-                            ),
-
-                            React.createElement('div', { className: 'bg-white rounded-lg shadow-sm p-6 mb-6' },
-                                React.createElement('h2', { className: 'text-xl font-bold text-gray-900 mb-4' }, 'Daily Activity Pattern'),
-                                React.createElement(ResponsiveContainer, { width: '100%', height: 300 },
-                                    React.createElement(LineChart, { data: dailyData },
-                                        React.createElement(CartesianGrid, { strokeDasharray: '3 3' }),
-                                        React.createElement(XAxis, { dataKey: 'date', tick: { fontSize: 8 }, angle: -45, textAnchor: 'end', height: 80, interval: 'preserveStartEnd' }),
-                                        React.createElement(YAxis, null),
-                                        React.createElement(Tooltip, null),
-                                        React.createElement(Line, { type: 'monotone', dataKey: 'guests', stroke: '#FF8042', strokeWidth: 2, name: 'Daily Guests', dot: false })
-                                    )
-                                ),
-                                React.createElement('p', { className: 'text-xs text-gray-500 mt-2' }, 'Complete FY25 daily activity')
-                            ),
-
-                            React.createElement('div', { className: 'grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6' },
-                                React.createElement('div', { className: 'bg-white rounded-lg shadow-sm p-6' },
-                                    React.createElement('h2', { className: 'text-xl font-bold text-gray-900 mb-4' }, 'Most Popular Days - Guests'),
-                                    React.createElement(ResponsiveContainer, { width: '100%', height: 300 },
-                                        React.createElement(BarChart, { data: dayOfWeekData },
-                                            React.createElement(CartesianGrid, { strokeDasharray: '3 3' }),
-                                            React.createElement(XAxis, { dataKey: 'day' }),
-                                            React.createElement(YAxis, null),
-                                            React.createElement(Tooltip, null),
-                                            React.createElement(Bar, { dataKey: 'guests', fill: '#8884D8', name: 'Total Guests' })
-                                        )
-                                    )
-                                ),
-                                React.createElement('div', { className: 'bg-white rounded-lg shadow-sm p-6' },
-                                    React.createElement('h2', { className: 'text-xl font-bold text-gray-900 mb-4' }, 'Most Popular Days - Groups'),
-                                    React.createElement(ResponsiveContainer, { width: '100%', height: 300 },
-                                        React.createElement(BarChart, { data: dayOfWeekData },
-                                            React.createElement(CartesianGrid, { strokeDasharray: '3 3' }),
-                                            React.createElement(XAxis, { dataKey: 'day' }),
-                                            React.createElement(YAxis, null),
-                                            React.createElement(Tooltip, null),
-                                            React.createElement(Bar, { dataKey: 'groups', fill: '#82ca9d', name: 'Number of Groups' })
-                                        )
-                                    )
-                                )
-                            ),
-
-                            React.createElement('div', { className: 'grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6' },
-                                React.createElement('div', { className: 'bg-white rounded-lg shadow-sm p-6' },
-                                    React.createElement('h2', { className: 'text-xl font-bold text-gray-900 mb-4' }, 'Top 10 Groups by Total Guests'),
-                                    React.createElement(ResponsiveContainer, { width: '100%', height: 400 },
-                                        React.createElement(BarChart, { data: groupBreakdown.slice(0, 10), layout: 'vertical', margin: { left: 150 } },
-                                            React.createElement(CartesianGrid, { strokeDasharray: '3 3' }),
-                                            React.createElement(XAxis, { type: 'number' }),
-                                            React.createElement(YAxis, { type: 'category', dataKey: 'name', width: 140, tick: { fontSize: 11 } }),
-                                            React.createElement(Tooltip, null),
-                                            React.createElement(Bar, { dataKey: 'totalGuests', fill: '#3b82f6', name: 'Total Guests' })
-                                        )
-                                    )
-                                ),
-                                React.createElement('div', { className: 'bg-white rounded-lg shadow-sm p-6' },
-                                    React.createElement('h2', { className: 'text-xl font-bold text-gray-900 mb-4' }, 'Top 10 Groups by Number of Visits'),
-                                    React.createElement(ResponsiveContainer, { width: '100%', height: 400 },
-                                        React.createElement(BarChart, { 
-                                            data: [...groupBreakdown].sort((a, b) => b.visitCount - a.visitCount).slice(0, 10),
-                                            layout: 'vertical',
-                                            margin: { left: 150 }
-                                        },
-                                            React.createElement(CartesianGrid, { strokeDasharray: '3 3' }),
-                                            React.createElement(XAxis, { type: 'number' }),
-                                            React.createElement(YAxis, { type: 'category', dataKey: 'name', width: 140, tick: { fontSize: 11 } }),
-                                            React.createElement(Tooltip, null),
-                                            React.createElement(Bar, { dataKey: 'visitCount', fill: '#10b981', name: 'Number of Visits' })
-                                        )
-                                    )
-                                )
-                            )
-                        )
-                    );
+                const [, name, dateStr, qty, heldQty] = match;
+                const totalQty = parseInt(qty) + parseInt(heldQty);
+                
+                const [year, month, day] = dateStr.split('-').map(Number);
+                const date = new Date(Date.UTC(year, month - 1, day));
+                
+                return {
+                    name: name.trim(),
+                    date: date,
+                    dateStr: dateStr,
+                    totalQuantity: totalQty
                 };
+            }).filter(r => r && r.totalQuantity > 0);
 
-                ReactDOM.render(React.createElement(FieldTripDashboard), document.getElementById('root'));
-            }
+            const isChaperoneName = (name) => {
+                const nameLower = name.toLowerCase();
+                const orgKeywords = ['school', 'elementary', 'middle', 'high', 'academy', 'center', 
+                                    'district', 'program', 'church', 'college', 'university', 
+                                    'charter', 'christian', 'catholic', 'preschool', 'daycare',
+                                    'ymca', 'ywca', 'learning', 'education', 'prep', 'steam',
+                                    'foundation', 'association', 'institute', 'troop', 'homeschool'];
+                
+                const hasOrgKeyword = orgKeywords.some(keyword => nameLower.includes(keyword));
+                const hasTwoNames = name.split(' ').length >= 2 && name.split(' ').length <= 5;
+                
+                return (!hasOrgKeyword && hasTwoNames) || name === 'Anonymous Buyer';
+            };
+
+            const organizations = records.filter(r => !isChaperoneName(r.name));
+
+            // Calculate metrics
+            const totalGuests = records.reduce((sum, r) => sum + r.totalQuantity, 0);
+            const totalBookings = organizations.length;
+            const avgGroupSize = totalBookings > 0 ? Math.round(totalGuests / totalBookings) : 0;
+
+            // Group breakdown
+            const groups = {};
+            organizations.forEach(record => {
+                if (!groups[record.name]) {
+                    groups[record.name] = { name: record.name, totalGuests: 0, visitCount: 0 };
+                }
+                groups[record.name].totalGuests += record.totalQuantity;
+                groups[record.name].visitCount += 1;
+            });
+            const groupBreakdown = Object.values(groups).sort((a, b) => b.totalGuests - a.totalGuests);
+
+            // Monthly data
+            const months = {};
+            records.forEach(record => {
+                const monthKey = record.dateStr.slice(0, 7);
+                const monthLabel = new Intl.DateTimeFormat('en-US', { year: 'numeric', month: 'short', timeZone: 'UTC' }).format(record.date);
+                if (!months[monthKey]) {
+                    months[monthKey] = { month: monthLabel, guests: 0, sortKey: monthKey };
+                }
+                months[monthKey].guests += record.totalQuantity;
+            });
+            const monthlyData = Object.values(months).sort((a, b) => a.sortKey.localeCompare(b.sortKey));
+
+            // Day of week data
+            const days = { Monday: 0, Tuesday: 0, Wednesday: 0, Thursday: 0, Friday: 0, Saturday: 0, Sunday: 0 };
+            const dayGroups = { Monday: 0, Tuesday: 0, Wednesday: 0, Thursday: 0, Friday: 0, Saturday: 0, Sunday: 0 };
+            records.forEach(record => {
+                const dayName = new Intl.DateTimeFormat('en-US', { weekday: 'long', timeZone: 'UTC' }).format(record.date);
+                days[dayName] += record.totalQuantity;
+                dayGroups[dayName] += 1;
+            });
+            const dayOrder = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+            const dayOfWeekData = dayOrder.map(day => ({ day, guests: days[day], groups: dayGroups[day] })).filter(d => d.guests > 0);
+
+            // Key insights
+            const monthlyGuests = {};
+            records.forEach(record => {
+                const monthName = new Intl.DateTimeFormat('en-US', { month: 'long', timeZone: 'UTC' }).format(record.date);
+                monthlyGuests[monthName] = (monthlyGuests[monthName] || 0) + record.totalQuantity;
+            });
             
-            checkLibraries();
-        })();
+            const sortedMonths = Object.entries(monthlyGuests).sort((a, b) => b[1] - a[1]);
+            const peakMonth1 = sortedMonths[0] || ['', 0];
+            const peakMonth2 = sortedMonths[1] || ['', 0];
+            const peakTraffic = ((peakMonth1[1] + peakMonth2[1]) / totalGuests * 100).toFixed(0);
+
+            const multiVisitOrgs = groupBreakdown.filter(g => g.visitCount > 1);
+            const multiVisitGuests = multiVisitOrgs.reduce((sum, g) => sum + g.totalGuests, 0);
+            const multiVisitPercentage = ((multiVisitGuests / totalGuests) * 100).toFixed(0);
+
+            const top10Guests = groupBreakdown.slice(0, 10).reduce((sum, g) => sum + g.totalGuests, 0);
+            const top10Percentage = ((top10Guests / totalGuests) * 100).toFixed(0);
+
+            const quarters = {
+                'Q1 (Jan-Mar)': { guests: 0, months: ['01', '02', '03'] },
+                'Q2 (Apr-Jun)': { guests: 0, months: ['04', '05', '06'] },
+                'Q3 (Jul-Sep)': { guests: 0, months: ['07', '08', '09'] },
+                'Q4 (Oct-Dec)': { guests: 0, months: ['10', '11', '12'] }
+            };
+            records.forEach(record => {
+                const month = record.dateStr.slice(5, 7);
+                Object.entries(quarters).forEach(([qName, qData]) => {
+                    if (qData.months.includes(month)) qData.guests += record.totalQuantity;
+                });
+            });
+
+            appData = {
+                totalGuests,
+                totalBookings,
+                avgGroupSize,
+                uniqueGroups: groupBreakdown.length,
+                groupBreakdown,
+                monthlyData,
+                dayOfWeekData,
+                insights: {
+                    peakMonth1: peakMonth1[0],
+                    peakMonth1Count: peakMonth1[1],
+                    peakMonth2: peakMonth2[0],
+                    peakMonth2Count: peakMonth2[1],
+                    peakTraffic,
+                    multiVisitOrgs: multiVisitOrgs.length,
+                    multiVisitPercentage,
+                    top10Percentage,
+                    quarters
+                }
+            };
+
+            renderDashboard();
+        }
+
+        function renderDashboard() {
+            const d = appData;
+            document.getElementById('root').innerHTML = `
+                <div class="container">
+                    <div class="card">
+                        <h1>Field Trip Analytics Dashboard</h1>
+                        <p class="subtitle">Fiscal Year 2025 (July 1, 2024 - June 30, 2025)</p>
+                    </div>
+
+                    <div class="grid-4">
+                        <div class="metric-card">
+                            <div>
+                                <div class="metric-label">Total Guests</div>
+                                <div class="metric-value blue">${d.totalGuests.toLocaleString()}</div>
+                            </div>
+                            <svg class="icon blue" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+                                <circle cx="9" cy="7" r="4"/>
+                                <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+                                <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                            </svg>
+                        </div>
+                        <div class="metric-card">
+                            <div>
+                                <div class="metric-label">Unique Groups</div>
+                                <div class="metric-value indigo">${d.uniqueGroups}</div>
+                            </div>
+                            <svg class="icon indigo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                                <line x1="16" y1="2" x2="16" y2="6"/>
+                                <line x1="8" y1="2" x2="8" y2="6"/>
+                                <line x1="3" y1="10" x2="21" y2="10"/>
+                            </svg>
+                        </div>
+                        <div class="metric-card">
+                            <div>
+                                <div class="metric-label">Total Bookings</div>
+                                <div class="metric-value green">${d.totalBookings}</div>
+                            </div>
+                            <svg class="icon green" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                                <line x1="16" y1="2" x2="16" y2="6"/>
+                                <line x1="8" y1="2" x2="8" y2="6"/>
+                                <line x1="3" y1="10" x2="21" y2="10"/>
+                            </svg>
+                        </div>
+                        <div class="metric-card">
+                            <div>
+                                <div class="metric-label">Avg Group Size</div>
+                                <div class="metric-value orange">${d.avgGroupSize}</div>
+                            </div>
+                            <svg class="icon orange" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
+                                <polyline points="17 6 23 6 23 12"/>
+                            </svg>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <h2>Key Metrics</h2>
+                        <div class="insight-box insight-blue">
+                            <h3 class="insight-title">Peak Seasons</h3>
+                            <p class="insight-text">${d.insights.peakMonth1} (${d.insights.peakMonth1Count.toLocaleString()}) and ${d.insights.peakMonth2} (${d.insights.peakMonth2Count.toLocaleString()}) accounted for <strong>${d.insights.peakTraffic}% of annual traffic</strong>.</p>
+                        </div>
+                        <div class="insight-box insight-green">
+                            <h3 class="insight-title">Customer Loyalty</h3>
+                            <p class="insight-text"><strong>${d.insights.multiVisitOrgs} organizations (${((d.insights.multiVisitOrgs / d.uniqueGroups) * 100).toFixed(0)}%)</strong> returned for multiple visits, generating <strong>${d.insights.multiVisitPercentage}% of total attendance</strong>.</p>
+                        </div>
+                        <div class="insight-box insight-amber">
+                            <h3 class="insight-title">Top Customer Concentration</h3>
+                            <p class="insight-text">Top 10 organizations represent <strong>${d.insights.top10Percentage}% of total visitors</strong>, indicating strong relationships with key partners.</p>
+                        </div>
+                        <div class="quarter-grid">
+                            ${Object.entries(d.insights.quarters).map(([quarter, data]) => `
+                                <div class="quarter-box">
+                                    <div class="quarter-label">${quarter}</div>
+                                    <div class="quarter-value">${data.guests.toLocaleString()}</div>
+                                    <div class="quarter-percent">${((data.guests / d.totalGuests) * 100).toFixed(0)}% of annual</div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <h2>Monthly Guest Trends</h2>
+                        <div id="monthly-chart"></div>
+                    </div>
+
+                    <div class="grid-2">
+                        <div class="card">
+                            <h2>Most Popular Days - Guests</h2>
+                            <div id="day-guests-chart"></div>
+                        </div>
+                        <div class="card">
+                            <h2>Most Popular Days - Groups</h2>
+                            <div id="day-groups-chart"></div>
+                        </div>
+                    </div>
+
+                    <div class="grid-2">
+                        <div class="card">
+                            <h2>Top 10 Groups by Total Guests</h2>
+                            <div id="top-groups-chart"></div>
+                        </div>
+                        <div class="card">
+                            <h2>Top 10 Groups by Visits</h2>
+                            <div id="top-visits-chart"></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            drawLineChart('monthly-chart', d.monthlyData, 'month', 'guests', '#2563eb');
+            drawBarChart('day-guests-chart', d.dayOfWeekData, 'day', 'guests', '#8884d8');
+            drawBarChart('day-groups-chart', d.dayOfWeekData, 'day', 'groups', '#82ca9d');
+            drawHorizontalBarChart('top-groups-chart', d.groupBreakdown.slice(0, 10), 'name', 'totalGuests', '#3b82f6');
+            
+            const topByVisits = [...d.groupBreakdown].sort((a, b) => b.visitCount - a.visitCount).slice(0, 10);
+            drawHorizontalBarChart('top-visits-chart', topByVisits, 'name', 'visitCount', '#10b981');
+        }
+
+        function drawLineChart(containerId, data, xKey, yKey, color) {
+            const container = document.getElementById(containerId);
+            const width = container.clientWidth;
+            const height = 300;
+            const margin = { top: 20, right: 20, bottom: 60, left: 50 };
+            const chartWidth = width - margin.left - margin.right;
+            const chartHeight = height - margin.top - margin.bottom;
+
+            const maxY = Math.max(...data.map(d => d[yKey]));
+            const scaleY = chartHeight / maxY;
+            const scaleX = chartWidth / (data.length - 1);
+
+            let pathD = '';
+            data.forEach((d, i) => {
+                const x = i * scaleX;
+                const y = chartHeight - (d[yKey] * scaleY);
+                pathD += (i === 0 ? 'M' : 'L') + ` ${x} ${y}`;
+            });
+
+            container.innerHTML = `
+                <svg width="${width}" height="${height}">
+                    <g transform="translate(${margin.left}, ${margin.top})">
+                        ${data.map((d, i) => `
+                            <text x="${i * scaleX}" y="${chartHeight + 20}" text-anchor="middle" class="axis-label" transform="rotate(-45, ${i * scaleX}, ${chartHeight + 20})">${d[xKey]}</text>
+                        `).join('')}
+                        <path d="${pathD}" fill="none" stroke="${color}" stroke-width="2"/>
+                        ${data.map((d, i) => `
+                            <circle cx="${i * scaleX}" cy="${chartHeight - (d[yKey] * scaleY)}" r="4" fill="${color}">
+                                <title>${d[xKey]}: ${d[yKey].toLocaleString()}</title>
+                            </circle>
+                        `).join('')}
+                    </g>
+                </svg>
+            `;
+        }
+
+        function drawBarChart(containerId, data, xKey, yKey, color) {
+            const container = document.getElementById(containerId);
+            const width = container.clientWidth;
+            const height = 300;
+            const margin = { top: 20, right: 20, bottom: 40, left: 50 };
+            const chartWidth = width - margin.left - margin.right;
+            const chartHeight = height - margin.top - margin.bottom;
+
+            const maxY = Math.max(...data.map(d => d[yKey]));
+            const scaleY = chartHeight / maxY;
+            const barWidth = chartWidth / data.length - 10;
+
+            container.innerHTML = `
+                <svg width="${width}" height="${height}">
+                    <g transform="translate(${margin.left}, ${margin.top})">
+                        ${data.map((d, i) => {
+                            const barHeight = d[yKey] * scaleY;
+                            const x = i * (chartWidth / data.length) + 5;
+                            const y = chartHeight - barHeight;
+                            return `
+                                <rect class="bar" x="${x}" y="${y}" width="${barWidth}" height="${barHeight}" fill="${color}">
+                                    <title>${d[xKey]}: ${d[yKey].toLocaleString()}</title>
+                                </rect>
+                                <text x="${x + barWidth / 2}" y="${chartHeight + 20}" text-anchor="middle" class="axis-label">${d[xKey]}</text>
+                            `;
+                        }).join('')}
+                    </g>
+                </svg>
+            `;
+        }
+
+        function drawHorizontalBarChart(containerId, data, labelKey, valueKey, color) {
+            const container = document.getElementById(containerId);
+            const width = container.clientWidth;
+            const height = 400;
+            const margin = { top: 20, right: 20, bottom: 20, left: 150 };
+            const chartWidth = width - margin.left - margin.right;
+            const chartHeight = height - margin.top - margin.bottom;
+
+            const maxX = Math.max(...data.map(d => d[valueKey]));
+            const scaleX = chartWidth / maxX;
+            const barHeight = chartHeight / data.length - 5;
+
+            container.innerHTML = `
+                <svg width="${width}" height="${height}">
+                    <g transform="translate(${margin.left}, ${margin.top})">
+                        ${data.map((d, i) => {
+                            const barWidth = d[valueKey] * scaleX;
+                            const y = i * (chartHeight / data.length);
+                            const label = d[labelKey].length > 20 ? d[labelKey].substring(0, 18) + '...' : d[labelKey];
+                            return `
+                                <rect class="bar" x="0" y="${y}" width="${barWidth}" height="${barHeight}" fill="${color}">
+                                    <title>${d[labelKey]}: ${d[valueKey].toLocaleString()}</title>
+                                </rect>
+                                <text x="-5" y="${y + barHeight / 2 + 4}" text-anchor="end" class="axis-label" style="font-size: 11px;">${label}</text>
+                            `;
+                        }).join('')}
+                    </g>
+                </svg>
+            `;
+        }
+
+        function showUploadScreen() {
+            // Check if we have embedded CSV data
+            if (EMBEDDED_CSV && EMBEDDED_CSV.split('\n').length > 2) {
+                processData(EMBEDDED_CSV);
+                return;
+            }
+
+            document.getElementById('root').innerHTML = `
+                <div class="upload-box">
+                    <h2 class="upload-title">Upload CSV File</h2>
+                    <p class="upload-text">Please upload your consolidated field trips CSV file to view the dashboard.</p>
+                    <input type="file" accept=".csv" onchange="handleFileUpload(event)" />
+                </div>
+            `;
+        }
+
+        function showError(message) {
+            document.getElementById('root').innerHTML = `
+                <div class="upload-box">
+                    <h2 class="upload-title">Error</h2>
+                    <p class="error">${message}</p>
+                </div>
+            `;
+        }
+
+        // Initialize
+        showUploadScreen();
     </script>
 </body>
 </html>
