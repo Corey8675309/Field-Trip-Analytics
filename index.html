@@ -2119,14 +2119,14 @@ Metrolina Christian Academy Summer Day Camp	6/30/2025	0	0
 
             const dataMaxY = Math.max(...data.map(d => d[yKey]));
             
-            // Round up to nearest 500 and add some padding
-            const maxY = Math.ceil(dataMaxY / 500) * 500 + 500;
+            // Round up to nearest 1000 and add some padding
+            const maxY = Math.ceil(dataMaxY / 1000) * 1000 + 1000;
             
             const scaleY = chartHeight / maxY;
             const scaleX = chartWidth / (data.length - 1);
 
-            // Y-axis in increments of 500
-            const yStep = 500;
+            // Y-axis in increments of 1000
+            const yStep = 1000;
             const yAxisSteps = Math.floor(maxY / yStep);
 
             let pathD = '';
