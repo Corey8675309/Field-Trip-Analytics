@@ -2117,13 +2117,17 @@ Metrolina Christian Academy Summer Day Camp	6/30/2025	0	0
             const chartWidth = width - margin.left - margin.right;
             const chartHeight = height - margin.top - margin.bottom;
 
-            const maxY = Math.max(...data.map(d => d[yKey]));
+            const dataMaxY = Math.max(...data.map(d => d[yKey]));
+            
+            // Round up to nearest 500 and add some padding
+            const maxY = Math.ceil(dataMaxY / 500) * 500 + 500;
+            
             const scaleY = chartHeight / maxY;
             const scaleX = chartWidth / (data.length - 1);
 
-            // Calculate nice Y-axis intervals
-            const yAxisSteps = 5;
-            const yStep = Math.ceil(maxY / yAxisSteps / 100) * 100; // Round to nearest 100
+            // Y-axis in increments of 500
+            const yStep = 500;
+            const yAxisSteps = Math.floor(maxY / yStep);
 
             let pathD = '';
             data.forEach((d, i) => {
@@ -2137,7 +2141,6 @@ Metrolina Christian Academy Summer Day Camp	6/30/2025	0	0
             let yAxisLabels = '';
             for (let i = 0; i <= yAxisSteps; i++) {
                 const value = i * yStep;
-                if (value > maxY) continue;
                 const y = chartHeight - (value * scaleY);
                 gridLines += `<line x1="0" y1="${y}" x2="${chartWidth}" y2="${y}" stroke="#e5e7eb" stroke-width="1"/>`;
                 yAxisLabels += `<text x="-10" y="${y + 4}" text-anchor="end" class="axis-label">${value.toLocaleString()}</text>`;
