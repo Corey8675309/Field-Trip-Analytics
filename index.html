@@ -2113,13 +2113,17 @@ Metrolina Christian Academy Summer Day Camp	6/30/2025	0	0
             const container = document.getElementById(containerId);
             const width = container.clientWidth;
             const height = 300;
-            const margin = { top: 20, right: 20, bottom: 60, left: 50 };
+            const margin = { top: 20, right: 20, bottom: 60, left: 60 };
             const chartWidth = width - margin.left - margin.right;
             const chartHeight = height - margin.top - margin.bottom;
 
             const maxY = Math.max(...data.map(d => d[yKey]));
             const scaleY = chartHeight / maxY;
             const scaleX = chartWidth / (data.length - 1);
+
+            // Calculate nice Y-axis intervals
+            const yAxisSteps = 5;
+            const yStep = Math.ceil(maxY / yAxisSteps / 100) * 100; // Round to nearest 100
 
             let pathD = '';
             data.forEach((d, i) => {
@@ -2128,9 +2132,22 @@ Metrolina Christian Academy Summer Day Camp	6/30/2025	0	0
                 pathD += (i === 0 ? 'M' : 'L') + ` ${x} ${y}`;
             });
 
+            // Generate grid lines and Y-axis labels
+            let gridLines = '';
+            let yAxisLabels = '';
+            for (let i = 0; i <= yAxisSteps; i++) {
+                const value = i * yStep;
+                if (value > maxY) continue;
+                const y = chartHeight - (value * scaleY);
+                gridLines += `<line x1="0" y1="${y}" x2="${chartWidth}" y2="${y}" stroke="#e5e7eb" stroke-width="1"/>`;
+                yAxisLabels += `<text x="-10" y="${y + 4}" text-anchor="end" class="axis-label">${value.toLocaleString()}</text>`;
+            }
+
             container.innerHTML = `
                 <svg width="${width}" height="${height}">
                     <g transform="translate(${margin.left}, ${margin.top})">
+                        ${gridLines}
+                        ${yAxisLabels}
                         ${data.map((d, i) => `
                             <text x="${i * scaleX}" y="${chartHeight + 20}" text-anchor="middle" class="axis-label" transform="rotate(-45, ${i * scaleX}, ${chartHeight + 20})">${d[xKey]}</text>
                         `).join('')}
