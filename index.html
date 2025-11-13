@@ -1,170 +1,444 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Field Trip Analytics Dashboard</title>
-  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/recharts@2.1.16/dist/Recharts.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Field Trip Analytics Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body>
-  <div id="root"></div>
-  
-  <script type="text/babel">
-    const { useState, useMemo, useEffect } = React;
-    const { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } = Recharts;
+    <div id="root"></div>
+    
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/recharts@2.5.0/dist/Recharts.js"></script>
+    <script src="https://unpkg.com/lucide@0.263.1/dist/umd/lucide.min.js"></script>
+    
+    <script>
+        (function() {
+            // Poll until all libraries are loaded
+            function checkLibraries() {
+                if (typeof React === 'undefined' || 
+                    typeof ReactDOM === 'undefined' || 
+                    typeof Recharts === 'undefined' || 
+                    typeof lucide === 'undefined') {
+                    setTimeout(checkLibraries, 50);
+                    return;
+                }
+                
+                // All libraries loaded, start the app
+                initApp();
+            }
+            
+            function initApp() {
+                const { useState, useMemo } = React;
+                const { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } = Recharts;
+                const { Calendar, Users, TrendingUp } = lucide;
 
-    const Users = ({ className }) => (
-      <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-      </svg>
-    );
+                const FieldTripDashboard = () => {
+                    const [fileData, setFileData] = useState(null);
+                    const [error, setError] = useState(null);
 
-    const Calendar = ({ className }) => (
-      <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-      </svg>
-    );
+                    const handleFileUpload = (event) => {
+                        const uploadedFile = event.target.files[0];
+                        if (uploadedFile) {
+                            const reader = new FileReader();
+                            reader.onload = (e) => {
+                                setFileData(e.target.result);
+                                setError(null);
+                            };
+                            reader.onerror = () => {
+                                setError('Error reading file. Please try again.');
+                            };
+                            reader.readAsText(uploadedFile);
+                        }
+                    };
 
-    const TrendingUp = ({ className }) => (
-      <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-      </svg>
-    );
+                    const data = useMemo(() => {
+                        if (!fileData) return { records: [], chaperones: [], organizations: [] };
 
-    const FieldTripDashboard = () => {
-      const [fileData, setFileData] = useState(null);
-      const [error, setError] = useState(null);
+                        const lines = fileData.trim().split('\n').slice(1);
+                        
+                        const records = lines.map(line => {
+                            const match = line.match(/"([^"]+)",(\d{4}-\d{2}-\d{2}),(-?\d+),(-?\d+)/);
+                            if (!match) return null;
+                            
+                            const [, name, dateStr, qty, heldQty] = match;
+                            const totalQty = parseInt(qty) + parseInt(heldQty);
+                            
+                            const [year, month, day] = dateStr.split('-').map(Number);
+                            const date = new Date(Date.UTC(year, month - 1, day));
+                            
+                            return {
+                                name: name.trim(),
+                                date: date,
+                                dateStr: dateStr,
+                                quantity: parseInt(qty),
+                                heldQuantity: parseInt(heldQty),
+                                totalQuantity: totalQty
+                            };
+                        }).filter(r => r && r.totalQuantity > 0);
 
-      useEffect(() => {
-        const loadData = async () => {
-          try {
-            const response = await fetch('consolidated_field_trips (4).csv');
-            if (!response.ok) throw new Error('CSV file not found');
-            const csvText = await response.text();
-            setFileData(csvText);
-            setError(null);
-          } catch (error) {
-            console.error('Error loading file:', error);
-            setError('CSV file not found. Make sure the file is uploaded.');
-          }
-        };
-        loadData();
-      }, []);
+                        const isChaperoneName = (name) => {
+                            const nameLower = name.toLowerCase();
+                            const orgKeywords = ['school', 'elementary', 'middle', 'high', 'academy', 'center', 
+                                                'district', 'program', 'church', 'college', 'university', 
+                                                'charter', 'christian', 'catholic', 'preschool', 'daycare',
+                                                'ymca', 'ywca', 'learning', 'education', 'prep', 'steam',
+                                                'foundation', 'association', 'institute', 'troop', 'homeschool'];
+                            
+                            const hasOrgKeyword = orgKeywords.some(keyword => nameLower.includes(keyword));
+                            const hasTwoNames = name.split(' ').length >= 2 && name.split(' ').length <= 5;
+                            
+                            return (!hasOrgKeyword && hasTwoNames) || name === 'Anonymous Buyer';
+                        };
 
-      const data = useMemo(() => {
-        if (!fileData) return { records: [], chaperones: [], organizations: [] };
+                        const chaperones = records.filter(r => isChaperoneName(r.name));
+                        const organizations = records.filter(r => !isChaperoneName(r.name));
 
-        const lines = fileData.trim().split('\n').slice(1);
-        
-        const records = lines.map(line => {
-          const match = line.match(/"([^"]+)",(\d{4}-\d{2}-\d{2}),(-?\d+),(-?\d+)/);
-          if (!match) return null;
-          
-          const [, name, dateStr, qty, heldQty] = match;
-          const totalQty = parseInt(qty) + parseInt(heldQty);
-          
-          const [year, month, day] = dateStr.split('-').map(Number);
-          const date = new Date(Date.UTC(year, month - 1, day));
-          
-          return {
-            name: name.trim(),
-            date: date,
-            dateStr: dateStr,
-            quantity: parseInt(qty),
-            heldQuantity: parseInt(heldQty),
-            totalQuantity: totalQty
-          };
-        }).filter(r => r && r.totalQuantity > 0);
+                        return { records, chaperones, organizations };
+                    }, [fileData]);
 
-        const isChaperoneName = (name) => {
-          const nameLower = name.toLowerCase();
-          const orgKeywords = ['school', 'elementary', 'middle', 'high', 'academy', 'center', 
-                              'district', 'program', 'church', 'college', 'university', 
-                              'charter', 'christian', 'catholic', 'preschool', 'daycare',
-                              'ymca', 'ywca', 'learning', 'education', 'prep', 'steam',
-                              'foundation', 'association', 'institute', 'troop', 'homeschool'];
-          
-          const hasOrgKeyword = orgKeywords.some(keyword => nameLower.includes(keyword));
-          const hasTwoNames = name.split(' ').length >= 2 && name.split(' ').length <= 5;
-          
-          return (!hasOrgKeyword && hasTwoNames) || name === 'Anonymous Buyer';
-        };
+                    const monthlyData = useMemo(() => {
+                        const months = {};
+                        data.records.forEach(record => {
+                            const monthKey = record.dateStr.slice(0, 7);
+                            const monthLabel = new Intl.DateTimeFormat('en-US', { year: 'numeric', month: 'short', timeZone: 'UTC' }).format(record.date);
+                            if (!months[monthKey]) {
+                                months[monthKey] = { month: monthLabel, guests: 0, bookings: 0, sortKey: monthKey };
+                            }
+                            months[monthKey].guests += record.totalQuantity;
+                            months[monthKey].bookings += 1;
+                        });
+                        
+                        return Object.values(months).sort((a, b) => a.sortKey.localeCompare(b.sortKey));
+                    }, [data]);
 
-        const chaperones = records.filter(r => isChaperoneName(r.name));
-        const organizations = records.filter(r => !isChaperoneName(r.name));
+                    const dayOfWeekData = useMemo(() => {
+                        const days = { Monday: 0, Tuesday: 0, Wednesday: 0, Thursday: 0, Friday: 0, Saturday: 0, Sunday: 0 };
+                        const dayGroups = { Monday: 0, Tuesday: 0, Wednesday: 0, Thursday: 0, Friday: 0, Saturday: 0, Sunday: 0 };
+                        const dayOrder = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+                        
+                        data.records.forEach(record => {
+                            const dayName = new Intl.DateTimeFormat('en-US', { weekday: 'long', timeZone: 'UTC' }).format(record.date);
+                            days[dayName] += record.totalQuantity;
+                            dayGroups[dayName] += 1;
+                        });
+                        
+                        return dayOrder.map(day => ({ 
+                            day, 
+                            guests: days[day],
+                            groups: dayGroups[day]
+                        })).filter(d => d.guests > 0);
+                    }, [data]);
 
-        return { records, chaperones, organizations };
-      }, [fileData]);
+                    const dailyData = useMemo(() => {
+                        const days = {};
+                        data.records.forEach(record => {
+                            const dayKey = record.dateStr;
+                            if (!days[dayKey]) {
+                                days[dayKey] = { date: dayKey, guests: 0, bookings: 0, sortKey: dayKey };
+                            }
+                            days[dayKey].guests += record.totalQuantity;
+                            days[dayKey].bookings += 1;
+                        });
+                        
+                        return Object.values(days).sort((a, b) => a.sortKey.localeCompare(b.sortKey));
+                    }, [data]);
 
-      const monthlyData = useMemo(() => {
-        const months = {};
-        data.records.forEach(record => {
-          const monthKey = record.dateStr.slice(0, 7);
-          const monthLabel = new Intl.DateTimeFormat('en-US', { year: 'numeric', month: 'short', timeZone: 'UTC' }).format(record.date);
-          if (!months[monthKey]) {
-            months[monthKey] = { month: monthLabel, guests: 0, bookings: 0, sortKey: monthKey };
-          }
-          months[monthKey].guests += record.totalQuantity;
-          months[monthKey].bookings += 1;
-        });
-        
-        return Object.values(months).sort((a, b) => a.sortKey.localeCompare(b.sortKey));
-      }, [data]);
+                    const groupBreakdown = useMemo(() => {
+                        const groups = {};
+                        
+                        data.organizations.forEach(record => {
+                            if (!groups[record.name]) {
+                                groups[record.name] = {
+                                    name: record.name,
+                                    visits: [],
+                                    totalGuests: 0,
+                                    visitCount: 0
+                                };
+                            }
+                            groups[record.name].visits.push({
+                                date: record.dateStr,
+                                guests: record.totalQuantity
+                            });
+                            groups[record.name].totalGuests += record.totalQuantity;
+                            groups[record.name].visitCount += 1;
+                        });
+                        
+                        Object.values(groups).forEach(group => {
+                            group.visits.sort((a, b) => a.date.localeCompare(b.date));
+                        });
+                        
+                        return Object.values(groups).sort((a, b) => b.totalGuests - a.totalGuests);
+                    }, [data]);
 
-      const dayOfWeekData = useMemo(() => {
-        const days = { Monday: 0, Tuesday: 0, Wednesday: 0, Thursday: 0, Friday: 0, Saturday: 0, Sunday: 0 };
-        const dayGroups = { Monday: 0, Tuesday: 0, Wednesday: 0, Thursday: 0, Friday: 0, Saturday: 0, Sunday: 0 };
-        const dayOrder = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-        
-        data.records.forEach(record => {
-          const dayName = new Intl.DateTimeFormat('en-US', { weekday: 'long', timeZone: 'UTC' }).format(record.date);
-          days[dayName] += record.totalQuantity;
-          dayGroups[dayName] += 1;
-        });
-        
-        return dayOrder.map(day => ({ 
-          day, 
-          guests: days[day],
-          groups: dayGroups[day]
-        })).filter(d => d.guests > 0);
-      }, [data]);
+                    const metrics = useMemo(() => {
+                        const totalGuests = data.records.reduce((sum, r) => sum + r.totalQuantity, 0);
+                        const totalBookings = data.organizations.length;
+                        const chaperoneCount = data.chaperones.reduce((sum, r) => sum + r.totalQuantity, 0);
+                        const avgGroupSize = totalBookings > 0 ? totalGuests / totalBookings : 0;
 
-      const dailyData = useMemo(() => {
-        const days = {};
-        data.records.forEach(record => {
-          const dayKey = record.dateStr;
-          if (!days[dayKey]) {
-            days[dayKey] = { date: dayKey, guests: 0, bookings: 0, sortKey: dayKey };
-          }
-          days[dayKey].guests += record.totalQuantity;
-          days[dayKey].bookings += 1;
-        });
-        
-        return Object.values(days).sort((a, b) => a.sortKey.localeCompare(b.sortKey));
-      }, [data]);
+                        return { totalGuests, totalBookings, chaperoneCount, avgGroupSize };
+                    }, [data]);
 
-      const groupBreakdown = useMemo(() => {
-        const groups = {};
-        
-        data.organizations.forEach(record => {
-          if (!groups[record.name]) {
-            groups[record.name] = {
-              name: record.name,
-              visits: [],
-              totalGuests: 0,
-              visitCount: 0
-            };
-          }
-          groups[record.name].visits.push({
-            date: record.dateStr,
-            guests: record.totalQuantity
-          });
-          groups[record.name].totalGuests += record.totalQuantity;
-          groups[record.name].visitCount += 1;
-        });
-        
-        Object.values(groups).forEach(group => {
+                    const keyInsights = useMemo(() => {
+                        const monthlyGuests = {};
+                        data.records.forEach(record => {
+                            const monthKey = record.dateStr.slice(0, 7);
+                            const monthName = new Intl.DateTimeFormat('en-US', { month: 'long', timeZone: 'UTC' }).format(record.date);
+                            if (!monthlyGuests[monthName]) {
+                                monthlyGuests[monthName] = 0;
+                            }
+                            monthlyGuests[monthName] += record.totalQuantity;
+                        });
+                        
+                        const sortedMonths = Object.entries(monthlyGuests).sort((a, b) => b[1] - a[1]);
+                        const peakMonth1 = sortedMonths[0] || ['', 0];
+                        const peakMonth2 = sortedMonths[1] || ['', 0];
+                        const peakTraffic = ((peakMonth1[1] + peakMonth2[1]) / metrics.totalGuests * 100).toFixed(0);
+
+                        const totalVisits = groupBreakdown.reduce((sum, g) => sum + g.visitCount, 0);
+                        const uniqueOrgs = groupBreakdown.length;
+
+                        const top10Guests = groupBreakdown.slice(0, 10).reduce((sum, g) => sum + g.totalGuests, 0);
+                        const top10Percentage = ((top10Guests / metrics.totalGuests) * 100).toFixed(0);
+
+                        const multiVisitOrgs = groupBreakdown.filter(g => g.visitCount > 1);
+                        const multiVisitGuests = multiVisitOrgs.reduce((sum, g) => sum + g.totalGuests, 0);
+                        const multiVisitPercentage = ((multiVisitGuests / metrics.totalGuests) * 100).toFixed(0);
+
+                        const quarters = {
+                            'Q1 (Jan-Mar)': { guests: 0, months: ['01', '02', '03'] },
+                            'Q2 (Apr-Jun)': { guests: 0, months: ['04', '05', '06'] },
+                            'Q3 (Jul-Sep)': { guests: 0, months: ['07', '08', '09'] },
+                            'Q4 (Oct-Dec)': { guests: 0, months: ['10', '11', '12'] }
+                        };
+
+                        data.records.forEach(record => {
+                            const month = record.dateStr.slice(5, 7);
+                            Object.entries(quarters).forEach(([qName, qData]) => {
+                                if (qData.months.includes(month)) {
+                                    qData.guests += record.totalQuantity;
+                                }
+                            });
+                        });
+                        
+                        return {
+                            peakMonth1: peakMonth1[0],
+                            peakMonth1Count: peakMonth1[1],
+                            peakMonth2: peakMonth2[0],
+                            peakMonth2Count: peakMonth2[1],
+                            peakTraffic,
+                            top10Percentage,
+                            multiVisitOrgs: multiVisitOrgs.length,
+                            multiVisitPercentage,
+                            quarters
+                        };
+                    }, [data, metrics, groupBreakdown]);
+
+                    if (!fileData) {
+                        return React.createElement('div', { className: 'w-full bg-gray-50 p-6 min-h-screen flex items-center justify-center' },
+                            React.createElement('div', { className: 'text-center' },
+                                React.createElement('div', { className: 'bg-white rounded-lg shadow-sm p-8 max-w-md' },
+                                    React.createElement('h2', { className: 'text-xl font-bold text-gray-900 mb-4' }, 'Upload CSV File'),
+                                    React.createElement('p', { className: 'text-gray-600 mb-6' }, 'Please upload your consolidated field trips CSV file to view the dashboard.'),
+                                    React.createElement('input', {
+                                        type: 'file',
+                                        accept: '.csv',
+                                        onChange: handleFileUpload,
+                                        className: 'block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100'
+                                    }),
+                                    error && React.createElement('p', { className: 'text-red-500 text-sm mt-4' }, error)
+                                )
+                            )
+                        );
+                    }
+
+                    return React.createElement('div', { className: 'w-full bg-gray-50 p-6' },
+                        React.createElement('div', { className: 'max-w-7xl mx-auto' },
+                            React.createElement('div', { className: 'bg-white rounded-lg shadow-sm p-6 mb-6' },
+                                React.createElement('h1', { className: 'text-3xl font-bold text-gray-900 mb-2' }, 'Field Trip Analytics Dashboard'),
+                                React.createElement('p', { className: 'text-gray-600' }, 'Fiscal Year 2025 (July 1, 2024 - June 30, 2025)')
+                            ),
+
+                            React.createElement('div', { className: 'grid grid-cols-1 md:grid-cols-4 gap-4 mb-6' },
+                                React.createElement('div', { className: 'bg-white rounded-lg shadow-sm p-6' },
+                                    React.createElement('div', { className: 'flex items-center justify-between' },
+                                        React.createElement('div', null,
+                                            React.createElement('p', { className: 'text-sm text-gray-600 mb-1' }, 'Total Guests'),
+                                            React.createElement('p', { className: 'text-3xl font-bold text-blue-600' }, metrics.totalGuests.toLocaleString())
+                                        ),
+                                        React.createElement(Users, { className: 'w-12 h-12 text-blue-200' })
+                                    )
+                                ),
+                                React.createElement('div', { className: 'bg-white rounded-lg shadow-sm p-6' },
+                                    React.createElement('div', { className: 'flex items-center justify-between' },
+                                        React.createElement('div', null,
+                                            React.createElement('p', { className: 'text-sm text-gray-600 mb-1' }, 'Unique Groups'),
+                                            React.createElement('p', { className: 'text-3xl font-bold text-indigo-600' }, groupBreakdown.length)
+                                        ),
+                                        React.createElement(Calendar, { className: 'w-12 h-12 text-indigo-200' })
+                                    )
+                                ),
+                                React.createElement('div', { className: 'bg-white rounded-lg shadow-sm p-6' },
+                                    React.createElement('div', { className: 'flex items-center justify-between' },
+                                        React.createElement('div', null,
+                                            React.createElement('p', { className: 'text-sm text-gray-600 mb-1' }, 'Total Bookings'),
+                                            React.createElement('p', { className: 'text-3xl font-bold text-green-600' }, metrics.totalBookings)
+                                        ),
+                                        React.createElement(Calendar, { className: 'w-12 h-12 text-green-200' })
+                                    )
+                                ),
+                                React.createElement('div', { className: 'bg-white rounded-lg shadow-sm p-6' },
+                                    React.createElement('div', { className: 'flex items-center justify-between' },
+                                        React.createElement('div', null,
+                                            React.createElement('p', { className: 'text-sm text-gray-600 mb-1' }, 'Avg Group Size'),
+                                            React.createElement('p', { className: 'text-3xl font-bold text-orange-600' }, Math.round(metrics.avgGroupSize))
+                                        ),
+                                        React.createElement(TrendingUp, { className: 'w-12 h-12 text-orange-200' })
+                                    )
+                                )
+                            ),
+
+                            React.createElement('div', { className: 'bg-white rounded-lg shadow-sm p-6 mb-6' },
+                                React.createElement('h2', { className: 'text-2xl font-bold text-gray-900 mb-6' }, 'Key Metrics'),
+                                React.createElement('div', { className: 'space-y-4' },
+                                    React.createElement('div', { className: 'bg-blue-50 rounded-lg p-5' },
+                                        React.createElement('h3', { className: 'text-lg font-semibold text-blue-900 mb-2' }, 'Peak Seasons'),
+                                        React.createElement('p', { className: 'text-gray-700' },
+                                            keyInsights.peakMonth1, ' (', keyInsights.peakMonth1Count.toLocaleString(), ') and ',
+                                            keyInsights.peakMonth2, ' (', keyInsights.peakMonth2Count.toLocaleString(), ') accounted for ',
+                                            React.createElement('span', { className: 'font-bold' }, keyInsights.peakTraffic, '% of annual traffic'), '.'
+                                        )
+                                    ),
+                                    React.createElement('div', { className: 'bg-green-50 rounded-lg p-5' },
+                                        React.createElement('h3', { className: 'text-lg font-semibold text-green-900 mb-2' }, 'Customer Loyalty'),
+                                        React.createElement('p', { className: 'text-gray-700' },
+                                            React.createElement('span', { className: 'font-bold' },
+                                                keyInsights.multiVisitOrgs, ' organizations (',
+                                                ((keyInsights.multiVisitOrgs / groupBreakdown.length) * 100).toFixed(0), '%)'
+                                            ),
+                                            ' returned for multiple visits, generating ',
+                                            React.createElement('span', { className: 'font-bold' }, keyInsights.multiVisitPercentage, '% of total attendance'), '.'
+                                        )
+                                    ),
+                                    React.createElement('div', { className: 'bg-amber-50 rounded-lg p-5' },
+                                        React.createElement('h3', { className: 'text-lg font-semibold text-amber-900 mb-2' }, 'Top Customer Concentration'),
+                                        React.createElement('p', { className: 'text-gray-700' },
+                                            'Top 10 organizations represent ',
+                                            React.createElement('span', { className: 'font-bold' }, keyInsights.top10Percentage, '% of total visitors'),
+                                            ', indicating strong relationships with key partners.'
+                                        )
+                                    ),
+                                    React.createElement('div', { className: 'grid grid-cols-2 md:grid-cols-4 gap-4 mt-6' },
+                                        Object.entries(keyInsights.quarters).map(([quarter, quarterData]) =>
+                                            React.createElement('div', { key: quarter, className: 'bg-gray-50 rounded-lg p-4 text-center' },
+                                                React.createElement('div', { className: 'text-sm text-gray-600 mb-1' }, quarter),
+                                                React.createElement('div', { className: 'text-2xl font-bold text-gray-900' }, quarterData.guests.toLocaleString()),
+                                                React.createElement('div', { className: 'text-xs text-gray-500 mt-1' },
+                                                    ((quarterData.guests / metrics.totalGuests) * 100).toFixed(0), '% of annual'
+                                                )
+                                            )
+                                        )
+                                    )
+                                )
+                            ),
+
+                            React.createElement('div', { className: 'bg-white rounded-lg shadow-sm p-6 mb-6' },
+                                React.createElement('h2', { className: 'text-xl font-bold text-gray-900 mb-4' }, 'Monthly Guest Trends'),
+                                React.createElement(ResponsiveContainer, { width: '100%', height: 300 },
+                                    React.createElement(LineChart, { data: monthlyData },
+                                        React.createElement(CartesianGrid, { strokeDasharray: '3 3' }),
+                                        React.createElement(XAxis, { dataKey: 'month' }),
+                                        React.createElement(YAxis, null),
+                                        React.createElement(Tooltip, null),
+                                        React.createElement(Legend, null),
+                                        React.createElement(Line, { type: 'monotone', dataKey: 'guests', stroke: '#0088FE', strokeWidth: 2, name: 'Total Guests' })
+                                    )
+                                )
+                            ),
+
+                            React.createElement('div', { className: 'bg-white rounded-lg shadow-sm p-6 mb-6' },
+                                React.createElement('h2', { className: 'text-xl font-bold text-gray-900 mb-4' }, 'Daily Activity Pattern'),
+                                React.createElement(ResponsiveContainer, { width: '100%', height: 300 },
+                                    React.createElement(LineChart, { data: dailyData },
+                                        React.createElement(CartesianGrid, { strokeDasharray: '3 3' }),
+                                        React.createElement(XAxis, { dataKey: 'date', tick: { fontSize: 8 }, angle: -45, textAnchor: 'end', height: 80, interval: 'preserveStartEnd' }),
+                                        React.createElement(YAxis, null),
+                                        React.createElement(Tooltip, null),
+                                        React.createElement(Line, { type: 'monotone', dataKey: 'guests', stroke: '#FF8042', strokeWidth: 2, name: 'Daily Guests', dot: false })
+                                    )
+                                ),
+                                React.createElement('p', { className: 'text-xs text-gray-500 mt-2' }, 'Complete FY25 daily activity')
+                            ),
+
+                            React.createElement('div', { className: 'grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6' },
+                                React.createElement('div', { className: 'bg-white rounded-lg shadow-sm p-6' },
+                                    React.createElement('h2', { className: 'text-xl font-bold text-gray-900 mb-4' }, 'Most Popular Days - Guests'),
+                                    React.createElement(ResponsiveContainer, { width: '100%', height: 300 },
+                                        React.createElement(BarChart, { data: dayOfWeekData },
+                                            React.createElement(CartesianGrid, { strokeDasharray: '3 3' }),
+                                            React.createElement(XAxis, { dataKey: 'day' }),
+                                            React.createElement(YAxis, null),
+                                            React.createElement(Tooltip, null),
+                                            React.createElement(Bar, { dataKey: 'guests', fill: '#8884D8', name: 'Total Guests' })
+                                        )
+                                    )
+                                ),
+                                React.createElement('div', { className: 'bg-white rounded-lg shadow-sm p-6' },
+                                    React.createElement('h2', { className: 'text-xl font-bold text-gray-900 mb-4' }, 'Most Popular Days - Groups'),
+                                    React.createElement(ResponsiveContainer, { width: '100%', height: 300 },
+                                        React.createElement(BarChart, { data: dayOfWeekData },
+                                            React.createElement(CartesianGrid, { strokeDasharray: '3 3' }),
+                                            React.createElement(XAxis, { dataKey: 'day' }),
+                                            React.createElement(YAxis, null),
+                                            React.createElement(Tooltip, null),
+                                            React.createElement(Bar, { dataKey: 'groups', fill: '#82ca9d', name: 'Number of Groups' })
+                                        )
+                                    )
+                                )
+                            ),
+
+                            React.createElement('div', { className: 'grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6' },
+                                React.createElement('div', { className: 'bg-white rounded-lg shadow-sm p-6' },
+                                    React.createElement('h2', { className: 'text-xl font-bold text-gray-900 mb-4' }, 'Top 10 Groups by Total Guests'),
+                                    React.createElement(ResponsiveContainer, { width: '100%', height: 400 },
+                                        React.createElement(BarChart, { data: groupBreakdown.slice(0, 10), layout: 'vertical', margin: { left: 150 } },
+                                            React.createElement(CartesianGrid, { strokeDasharray: '3 3' }),
+                                            React.createElement(XAxis, { type: 'number' }),
+                                            React.createElement(YAxis, { type: 'category', dataKey: 'name', width: 140, tick: { fontSize: 11 } }),
+                                            React.createElement(Tooltip, null),
+                                            React.createElement(Bar, { dataKey: 'totalGuests', fill: '#3b82f6', name: 'Total Guests' })
+                                        )
+                                    )
+                                ),
+                                React.createElement('div', { className: 'bg-white rounded-lg shadow-sm p-6' },
+                                    React.createElement('h2', { className: 'text-xl font-bold text-gray-900 mb-4' }, 'Top 10 Groups by Number of Visits'),
+                                    React.createElement(ResponsiveContainer, { width: '100%', height: 400 },
+                                        React.createElement(BarChart, { 
+                                            data: [...groupBreakdown].sort((a, b) => b.visitCount - a.visitCount).slice(0, 10),
+                                            layout: 'vertical',
+                                            margin: { left: 150 }
+                                        },
+                                            React.createElement(CartesianGrid, { strokeDasharray: '3 3' }),
+                                            React.createElement(XAxis, { type: 'number' }),
+                                            React.createElement(YAxis, { type: 'category', dataKey: 'name', width: 140, tick: { fontSize: 11 } }),
+                                            React.createElement(Tooltip, null),
+                                            React.createElement(Bar, { dataKey: 'visitCount', fill: '#10b981', name: 'Number of Visits' })
+                                        )
+                                    )
+                                )
+                            )
+                        )
+                    );
+                };
+
+                ReactDOM.render(React.createElement(FieldTripDashboard), document.getElementById('root'));
+            }
+            
+            checkLibraries();
+        })();
+    </script>
+</body>
+</html>
