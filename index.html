@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Field Trip Analytics Dashboard</title>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/recharts@2.1.16/dist/Recharts.js"></script>
+</head>
+<body>
+  <div id="root"></div>
+  
+  <script type="text/babel">
+    const { useState, useMemo, useEffect } = React;
+    const { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } = Recharts;
+
+    const Users = ({ className }) => (
+      <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+      </svg>
+    );
+
+    const Calendar = ({ className }) => (
+      <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+      </svg>
+    );
+
+    const TrendingUp = ({ className }) => (
+      <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+      </svg>
+    );
+
+    const FieldTripDashboard = () => {
+      const [fileData, setFileData] = useState(null);
+      const [error, setError] = useState(null);
+
+      useEffect(() => {
+        const loadData = async () => {
+          try {
+            const response = await fetch('consolidated_field_trips (4).csv');
+            if (!response.ok) throw new Error('CSV file not found');
+            const csvText = await response.text();
+            setFileData(csvText);
+            setError(null);
+          } catch (error) {
+            console.error('Error loading file:', error);
+            setError('CSV file not found. Make sure the file is uploaded.');
+          }
+        };
+        loadData();
+      }, []);
+
+      const data = useMemo(() => {
+        if (!fileData) return { records: [], chaperones: [], organizations: [] };
+
+        const lines = fileData.trim().split('\n').slice(1);
+        
+        const records = lines.map(line => {
+          const match = line.match(/"([^"]+)",(\d{4}-\d{2}-\d{2}),(-?\d+),(-?\d+)/);
+          if (!match) return null;
+          
+          const [, name, dateStr, qty, heldQty] = match;
+          const totalQty = parseInt(qty) + parseInt(heldQty);
+          
+          const [year, month, day] = dateStr.split('-').map(Number);
+          const date = new Date(Date.UTC(year, month - 1, day));
+          
+          return {
+            name: name.trim(),
+            date: date,
+            dateStr: dateStr,
+            quantity: parseInt(qty),
+            heldQuantity: parseInt(heldQty),
+            totalQuantity: totalQty
+          };
+        }).filter(r => r && r.totalQuantity > 0);
+
+        const isChaperoneName = (name) => {
+          const nameLower = name.toLowerCase();
+          const orgKeywords = ['school', 'elementary', 'middle', 'high', 'academy', 'center', 
+                              'district', 'program', 'church', 'college', 'university', 
+                              'charter', 'christian', 'catholic', 'preschool', 'daycare',
+                              'ymca', 'ywca', 'learning', 'education', 'prep', 'steam',
+                              'foundation', 'association', 'institute', 'troop', 'homeschool'];
+          
+          const hasOrgKeyword = orgKeywords.some(keyword => nameLower.includes(keyword));
+          const hasTwoNames = name.split(' ').length >= 2 && name.split(' ').length <= 5;
+          
+          return (!hasOrgKeyword && hasTwoNames) || name === 'Anonymous Buyer';
+        };
+
+        const chaperones = records.filter(r => isChaperoneName(r.name));
+        const organizations = records.filter(r => !isChaperoneName(r.name));
+
+        return { records, chaperones, organizations };
+      }, [fileData]);
+
+      const monthlyData = useMemo(() => {
+        const months = {};
+        data.records.forEach(record => {
+          const monthKey = record.dateStr.slice(0, 7);
+          const monthLabel = new Intl.DateTimeFormat('en-US', { year: 'numeric', month: 'short', timeZone: 'UTC' }).format(record.date);
+          if (!months[monthKey]) {
+            months[monthKey] = { month: monthLabel, guests: 0, bookings: 0, sortKey: monthKey };
+          }
+          months[monthKey].guests += record.totalQuantity;
+          months[monthKey].bookings += 1;
+        });
+        
+        return Object.values(months).sort((a, b) => a.sortKey.localeCompare(b.sortKey));
+      }, [data]);
+
+      const dayOfWeekData = useMemo(() => {
+        const days = { Monday: 0, Tuesday: 0, Wednesday: 0, Thursday: 0, Friday: 0, Saturday: 0, Sunday: 0 };
+        const dayGroups = { Monday: 0, Tuesday: 0, Wednesday: 0, Thursday: 0, Friday: 0, Saturday: 0, Sunday: 0 };
+        const dayOrder = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+        
+        data.records.forEach(record => {
+          const dayName = new Intl.DateTimeFormat('en-US', { weekday: 'long', timeZone: 'UTC' }).format(record.date);
+          days[dayName] += record.totalQuantity;
+          dayGroups[dayName] += 1;
+        });
+        
+        return dayOrder.map(day => ({ 
+          day, 
+          guests: days[day],
+          groups: dayGroups[day]
+        })).filter(d => d.guests > 0);
+      }, [data]);
+
+      const dailyData = useMemo(() => {
+        const days = {};
+        data.records.forEach(record => {
+          const dayKey = record.dateStr;
+          if (!days[dayKey]) {
+            days[dayKey] = { date: dayKey, guests: 0, bookings: 0, sortKey: dayKey };
+          }
+          days[dayKey].guests += record.totalQuantity;
+          days[dayKey].bookings += 1;
+        });
+        
+        return Object.values(days).sort((a, b) => a.sortKey.localeCompare(b.sortKey));
+      }, [data]);
+
+      const groupBreakdown = useMemo(() => {
+        const groups = {};
+        
+        data.organizations.forEach(record => {
+          if (!groups[record.name]) {
+            groups[record.name] = {
+              name: record.name,
+              visits: [],
+              totalGuests: 0,
+              visitCount: 0
+            };
+          }
+          groups[record.name].visits.push({
+            date: record.dateStr,
+            guests: record.totalQuantity
+          });
+          groups[record.name].totalGuests += record.totalQuantity;
+          groups[record.name].visitCount += 1;
+        });
+        
+        Object.values(groups).forEach(group => {
