@@ -34,9 +34,7 @@
     .data-table th { background: #f8fafc; font-weight: 600; color: #475569; position: sticky; top: 0; }
     .data-table tr:hover { background: #f8fafc; }
     .table-wrapper { max-height: 400px; overflow-y: auto; }
-    .day-sun { color: #ef4444; }
-    .day-sat { color: #f59e0b; }
-    .day-fri { color: #10b981; }
+
   </style>
 </head>
 <body>
@@ -177,7 +175,7 @@
             datasets: [{
               label: 'Total by Day of Week',
               data: stats.byDow,
-              backgroundColor: ['#ef4444','#64748b','#64748b','#64748b','#64748b','#10b981','#f59e0b'],
+              backgroundColor: '#3b82f6',
               borderRadius: 6
             }]
           };
@@ -306,7 +304,7 @@
                     {filteredData.map((r, i) => (
                       <tr key={i}>
                         <td>{formatDate(r.dateStr)}</td>
-                        <td className={getDayClass(r.dow)}>{DAYS[r.dow]}</td>
+                        <td>{DAYS[r.dow]}</td>
                         <td>{r.visitors.toLocaleString()}</td>
                       </tr>
                     ))}
@@ -330,7 +328,7 @@
               <tbody>
                 {DAYS.map((day, i) => (
                   <tr key={i}>
-                    <td className={getDayClass(i)}>{day}</td>
+                    <td>{day}</td>
                     <td>{stats.byDow[i].toLocaleString()}</td>
                     <td>{stats.countByDow[i]}</td>
                     <td>{stats.countByDow[i] ? Math.round(stats.byDow[i] / stats.countByDow[i]).toLocaleString() : 0}</td>
