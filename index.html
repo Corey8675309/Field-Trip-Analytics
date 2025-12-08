@@ -154,10 +154,11 @@
 
     function FYSection({ data, fy, hasHeld }) {
       const [viewMode, setViewMode] = useState('daily');
+      const [dateRange, setDateRange] = useState({start:'', end:''});
       const chartRef = useRef(null);
       const chartInstance = useRef(null);
 
-      const processed = useMemo(() => {
+      const allProcessed = useMemo(() => {
         return data.map(r => ({
           dateStr: r[0],
           actual: hasHeld ? r[1] : r[1],
@@ -167,6 +168,14 @@
           dow: new Date(r[0] + 'T12:00:00').getDay()
         }));
       }, [data, hasHeld]);
+
+      const processed = useMemo(() => {
+        return allProcessed.filter(row => {
+          if (dateRange.start && row.dateStr < dateRange.start) return false;
+          if (dateRange.end && row.dateStr > dateRange.end) return false;
+          return true;
+        });
+      }, [allProcessed, dateRange]);
 
       const stats = useMemo(() => {
         const totalActual = processed.reduce((s, r) => s + r.actual, 0);
@@ -294,6 +303,20 @@
         <div>
           <h2>FY{fy} — {fy === '25' ? 'July 2024 – June 2025' : 'July 2025 – June 2026'}</h2>
           
+          <div className="chart-container" style={{marginBottom:'20px', padding:'15px'}}>
+            <div style={{display:'flex', flexWrap:'wrap', gap:'15px', alignItems:'flex-end'}}>
+              <div className="filter-group" style={{display:'flex', flexDirection:'column'}}>
+                <label style={{fontSize:'0.85rem', fontWeight:'600', color:'#475569', marginBottom:'6px'}}>Start Date</label>
+                <input type="date" value={dateRange.start} onChange={e => setDateRange(p => ({...p, start: e.target.value}))} style={{padding:'10px', border:'1px solid #e2e8f0', borderRadius:'8px', fontSize:'0.95rem'}} />
+              </div>
+              <div className="filter-group" style={{display:'flex', flexDirection:'column'}}>
+                <label style={{fontSize:'0.85rem', fontWeight:'600', color:'#475569', marginBottom:'6px'}}>End Date</label>
+                <input type="date" value={dateRange.end} onChange={e => setDateRange(p => ({...p, end: e.target.value}))} style={{padding:'10px', border:'1px solid #e2e8f0', borderRadius:'8px', fontSize:'0.95rem'}} />
+              </div>
+              <button onClick={() => setDateRange({start:'', end:''})} style={{padding:'10px 16px', border:'1px solid #e2e8f0', background:'#fff', borderRadius:'8px', cursor:'pointer'}}>Reset</button>
+            </div>
+          </div>
+          
           {hasHeld && (
             <div className="legend">
               <div className="legend-item"><div className="legend-dot" style={{background:'#3b82f6'}}></div> Actual Attendance</div>
@@ -385,6 +408,8 @@
     function CompareSection() {
       const chartRef = useRef(null);
       const chartInstance = useRef(null);
+      const dailyChartRef = useRef(null);
+      const dailyChartInstance = useRef(null);
 
       const fy25Monthly = useMemo(() => {
         const byMonth = {};
@@ -410,6 +435,40 @@
         return FY_MONTHS.map((_, i) => byMonth[i] || 0);
       }, []);
 
+      // Daily data aligned by fiscal year day (0 = July 1)
+      const fy25Daily = useMemo(() => {
+        const byDay = {};
+        FY25_RAW.forEach(r => {
+          const d = new Date(r[0] + 'T12:00:00');
+          const fyStart = new Date(d.getMonth() >= 6 ? d.getFullYear() : d.getFullYear() - 1, 6, 1);
+          const dayNum = Math.floor((d - fyStart) / (1000 * 60 * 60 * 24));
+          byDay[dayNum] = (byDay[dayNum] || 0) + r[1];
+        });
+        return byDay;
+      }, []);
+
+      const fy26Daily = useMemo(() => {
+        const byDay = {};
+        FY26_RAW.forEach(r => {
+          const d = new Date(r[0] + 'T12:00:00');
+          const fyStart = new Date(d.getMonth() >= 6 ? d.getFullYear() : d.getFullYear() - 1, 6, 1);
+          const dayNum = Math.floor((d - fyStart) / (1000 * 60 * 60 * 24));
+          byDay[dayNum] = (byDay[dayNum] || 0) + r[1] + Math.max(0, r[2]);
+        });
+        return byDay;
+      }, []);
+
+      const dailyLabels = useMemo(() => {
+        const labels = [];
+        const startDate = new Date(2024, 6, 1);
+        for (let i = 0; i < 366; i++) {
+          const d = new Date(startDate);
+          d.setDate(d.getDate() + i);
+          labels.push(d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+        }
+        return labels;
+      }, []);
+
       useEffect(() => {
         if (!chartRef.current) return;
         if (chartInstance.current) chartInstance.current.destroy();
@@ -428,7 +487,35 @@
             scales: { y: { beginAtZero: true, ticks: { callback: v => v.toLocaleString() }}}
           }
         });
-      }, [fy25Monthly, fy26Monthly]);
+
+        // Daily comparison chart
+        if (dailyChartInstance.current) dailyChartInstance.current.destroy();
+        const fy25Data = [];
+        const fy26Data = [];
+        for (let i = 0; i < 366; i++) {
+          fy25Data.push(fy25Daily[i] || 0);
+          fy26Data.push(fy26Daily[i] || 0);
+        }
+        dailyChartInstance.current = new Chart(dailyChartRef.current, {
+          type: 'line',
+          data: {
+            labels: dailyLabels,
+            datasets: [
+              { label: 'FY25', data: fy25Data, borderColor: '#3b82f6', backgroundColor: '#3b82f620', fill: false, tension: 0.3, pointRadius: 0 },
+              { label: 'FY26 (Actual + Booked)', data: fy26Data, borderColor: '#10b981', backgroundColor: '#10b98120', fill: false, tension: 0.3, pointRadius: 0 }
+            ]
+          },
+          options: {
+            responsive: true, maintainAspectRatio: false,
+            interaction: { intersect: false, mode: 'index' },
+            plugins: { legend: { display: true }},
+            scales: { 
+              x: { ticks: { maxTicksLimit: 12 }},
+              y: { beginAtZero: true, ticks: { callback: v => v.toLocaleString() }}
+            }
+          }
+        });
+      }, [fy25Monthly, fy26Monthly, fy25Daily, fy26Daily, dailyLabels]);
 
       const fy25Total = fy25Monthly.reduce((a, b) => a + b, 0);
       const fy26Total = fy26Monthly.reduce((a, b) => a + b, 0);
@@ -454,6 +541,13 @@
                 {diff >= 0 ? '+' : ''}{diff.toLocaleString()}
               </div>
               <div className="sub">{pctChange}%</div>
+            </div>
+          </div>
+
+          <div className="chart-container">
+            <div className="chart-title">Daily Comparison (Aligned by Fiscal Year)</div>
+            <div className="chart-wrapper">
+              <canvas ref={dailyChartRef}></canvas>
             </div>
           </div>
 
