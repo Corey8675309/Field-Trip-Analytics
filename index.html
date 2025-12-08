@@ -355,6 +355,7 @@
     }
 
     function CompareSection() {
+      const [dateRange, setDateRange] = useState({ start: '', end: '' });
       const monthlyChartRef = useRef(null);
       const monthlyChartInstance = useRef(null);
       const weeklyChartRef = useRef(null);
@@ -362,17 +363,36 @@
       const dailyChartRef = useRef(null);
       const dailyChartInstance = useRef(null);
 
+      // Convert date to fiscal year day number (0 = July 1)
+      const dateToFyDay = (dateStr) => {
+        const d = new Date(dateStr + 'T12:00:00');
+        const m = d.getMonth();
+        const day = d.getDate();
+        // Create equivalent date in FY24 (July 2024 - June 2025)
+        const fyYear = m >= 6 ? 2024 : 2025;
+        const equiv = new Date(fyYear, m, day);
+        const fyStart = new Date(2024, 6, 1);
+        return Math.floor((equiv - fyStart) / (1000 * 60 * 60 * 24));
+      };
+
+      // Get filtered day range
+      const startDay = dateRange.start ? dateToFyDay(dateRange.start) : 0;
+      const endDay = dateRange.end ? dateToFyDay(dateRange.end) : 365;
+
       const fy25Monthly = useMemo(() => {
         const byMonth = {};
         FY25_RAW.forEach(r => {
           const d = new Date(r[0] + 'T12:00:00');
           const m = d.getMonth();
           const idx = m >= 6 ? m - 6 : m + 6;
+          const fyStart = new Date(2024, 6, 1);
+          const dayNum = Math.floor((d - fyStart) / (1000 * 60 * 60 * 24));
+          if (dayNum < startDay || dayNum > endDay) return;
           if (!byMonth[idx]) byMonth[idx] = 0;
           byMonth[idx] += r[1];
         });
         return FY_MONTHS.map((_, i) => byMonth[i] || 0);
-      }, []);
+      }, [startDay, endDay]);
 
       const fy26Monthly = useMemo(() => {
         const byMonth = {};
@@ -380,33 +400,38 @@
           const d = new Date(r[0] + 'T12:00:00');
           const m = d.getMonth();
           const idx = m >= 6 ? m - 6 : m + 6;
+          const fyStart = new Date(2025, 6, 1);
+          const dayNum = Math.floor((d - fyStart) / (1000 * 60 * 60 * 24));
+          if (dayNum < startDay || dayNum > endDay) return;
           if (!byMonth[idx]) byMonth[idx] = 0;
           byMonth[idx] += r[1] + Math.max(0, r[2]);
         });
         return FY_MONTHS.map((_, i) => byMonth[i] || 0);
-      }, []);
+      }, [startDay, endDay]);
 
       const fy25Daily = useMemo(() => {
         const byDay = {};
         FY25_RAW.forEach(r => {
           const d = new Date(r[0] + 'T12:00:00');
-          const fyStart = new Date(d.getMonth() >= 6 ? d.getFullYear() : d.getFullYear() - 1, 6, 1);
+          const fyStart = new Date(2024, 6, 1);
           const dayNum = Math.floor((d - fyStart) / (1000 * 60 * 60 * 24));
+          if (dayNum < startDay || dayNum > endDay) return;
           byDay[dayNum] = (byDay[dayNum] || 0) + r[1];
         });
         return byDay;
-      }, []);
+      }, [startDay, endDay]);
 
       const fy26Daily = useMemo(() => {
         const byDay = {};
         FY26_RAW.forEach(r => {
           const d = new Date(r[0] + 'T12:00:00');
-          const fyStart = new Date(d.getMonth() >= 6 ? d.getFullYear() : d.getFullYear() - 1, 6, 1);
+          const fyStart = new Date(2025, 6, 1);
           const dayNum = Math.floor((d - fyStart) / (1000 * 60 * 60 * 24));
+          if (dayNum < startDay || dayNum > endDay) return;
           byDay[dayNum] = (byDay[dayNum] || 0) + r[1] + Math.max(0, r[2]);
         });
         return byDay;
-      }, []);
+      }, [startDay, endDay]);
 
       const fy25Weekly = useMemo(() => {
         const weeks = [];
@@ -436,23 +461,25 @@
         const labels = [];
         const startDate = new Date(2024, 6, 1);
         for (let w = 0; w < 52; w++) {
+          const dayNum = w * 7;
+          if (dayNum < startDay || dayNum > endDay) continue;
           const d = new Date(startDate);
-          d.setDate(d.getDate() + w * 7);
-          labels.push(d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+          d.setDate(d.getDate() + dayNum);
+          labels.push({ label: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), week: w });
         }
         return labels;
-      }, []);
+      }, [startDay, endDay]);
 
       const dailyLabels = useMemo(() => {
         const labels = [];
         const startDate = new Date(2024, 6, 1);
-        for (let i = 0; i < 366; i++) {
+        for (let i = startDay; i <= endDay && i < 366; i++) {
           const d = new Date(startDate);
           d.setDate(d.getDate() + i);
-          labels.push(d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+          labels.push({ label: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), day: i });
         }
         return labels;
-      }, []);
+      }, [startDay, endDay]);
 
       useEffect(() => {
         // Monthly chart
@@ -475,13 +502,15 @@
 
         // Weekly chart
         if (weeklyChartInstance.current) weeklyChartInstance.current.destroy();
+        const fy25WeekData = weeklyLabels.map(w => fy25Weekly[w.week] || 0);
+        const fy26WeekData = weeklyLabels.map(w => fy26Weekly[w.week] || 0);
         weeklyChartInstance.current = new Chart(weeklyChartRef.current, {
           type: 'line',
           data: {
-            labels: weeklyLabels,
+            labels: weeklyLabels.map(w => w.label),
             datasets: [
-              { label: 'FY25 (Weekly Avg)', data: fy25Weekly, borderColor: '#3b82f6', fill: false, tension: 0.3, pointRadius: 3, borderWidth: 2 },
-              { label: 'FY26 (Weekly Avg)', data: fy26Weekly, borderColor: '#10b981', fill: false, tension: 0.3, pointRadius: 3, borderWidth: 2 }
+              { label: 'FY25 (Weekly Avg)', data: fy25WeekData, borderColor: '#3b82f6', fill: false, tension: 0.3, pointRadius: 3, borderWidth: 2 },
+              { label: 'FY26 (Weekly Avg)', data: fy26WeekData, borderColor: '#10b981', fill: false, tension: 0.3, pointRadius: 3, borderWidth: 2 }
             ]
           },
           options: {
@@ -497,18 +526,15 @@
 
         // Daily chart
         if (dailyChartInstance.current) dailyChartInstance.current.destroy();
-        const fy25Data = [], fy26Data = [];
-        for (let i = 0; i < 366; i++) {
-          fy25Data.push(fy25Daily[i] || 0);
-          fy26Data.push(fy26Daily[i] || 0);
-        }
+        const fy25DayData = dailyLabels.map(d => fy25Daily[d.day] || 0);
+        const fy26DayData = dailyLabels.map(d => fy26Daily[d.day] || 0);
         dailyChartInstance.current = new Chart(dailyChartRef.current, {
           type: 'line',
           data: {
-            labels: dailyLabels,
+            labels: dailyLabels.map(d => d.label),
             datasets: [
-              { label: 'FY25', data: fy25Data, borderColor: '#3b82f6', fill: false, tension: 0.3, pointRadius: 0 },
-              { label: 'FY26 (Actual + Booked)', data: fy26Data, borderColor: '#10b981', fill: false, tension: 0.3, pointRadius: 0 }
+              { label: 'FY25', data: fy25DayData, borderColor: '#3b82f6', fill: false, tension: 0.3, pointRadius: 0 },
+              { label: 'FY26 (Actual + Booked)', data: fy26DayData, borderColor: '#10b981', fill: false, tension: 0.3, pointRadius: 0 }
             ]
           },
           options: {
@@ -521,7 +547,7 @@
             }
           }
         });
-      }, [fy25Monthly, fy26Monthly, fy25Weekly, fy26Weekly, fy25Daily, fy26Daily, weeklyLabels, dailyLabels]);
+      }, [fy25Monthly, fy26Monthly, fy25Weekly, fy26Weekly, fy25Daily, fy26Daily, weeklyLabels, dailyLabels, startDay, endDay]);
 
       const fy25Total = fy25Monthly.reduce((a, b) => a + b, 0);
       const fy26Total = fy26Monthly.reduce((a, b) => a + b, 0);
@@ -531,6 +557,18 @@
       return (
         <div>
           <h2>Year-over-Year Comparison</h2>
+
+          <div className="filter-row">
+            <div className="filter-group">
+              <label>Start Date</label>
+              <input type="date" value={dateRange.start} onChange={e => setDateRange(p => ({ ...p, start: e.target.value }))} />
+            </div>
+            <div className="filter-group">
+              <label>End Date</label>
+              <input type="date" value={dateRange.end} onChange={e => setDateRange(p => ({ ...p, end: e.target.value }))} />
+            </div>
+            <button className="reset-btn" onClick={() => setDateRange({ start: '', end: '' })}>Reset</button>
+          </div>
 
           <div className="stats">
             <div className="stat-card">
