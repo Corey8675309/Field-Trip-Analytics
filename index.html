@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Field Trip Attendance Dashboard - FY25</title>
+  <title>Field Trip Attendance Dashboard</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
@@ -13,18 +13,18 @@
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f7fa; color: #333; min-height: 100vh; }
     .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
     h1 { font-size: 1.75rem; color: #1a1a2e; margin-bottom: 8px; }
+    h2 { font-size: 1.35rem; color: #1a1a2e; margin: 30px 0 15px 0; padding-bottom: 8px; border-bottom: 2px solid #e2e8f0; }
     .subtitle { color: #64748b; margin-bottom: 20px; }
-    .filters { display: flex; flex-wrap: wrap; gap: 15px; background: #fff; padding: 20px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); align-items: flex-end; }
-    .filter-group { display: flex; flex-direction: column; }
-    .filter-group label { font-size: 0.85rem; font-weight: 600; color: #475569; margin-bottom: 6px; }
-    .filter-group select, .filter-group input { padding: 10px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.95rem; background: #fff; min-width: 150px; }
+    .legend { display: flex; gap: 20px; margin-bottom: 15px; font-size: 0.9rem; }
+    .legend-item { display: flex; align-items: center; gap: 6px; }
+    .legend-dot { width: 12px; height: 12px; border-radius: 3px; }
     .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 15px; margin-bottom: 20px; }
     .stat-card { background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
     .stat-card .label { font-size: 0.85rem; color: #64748b; margin-bottom: 4px; }
     .stat-card .value { font-size: 1.5rem; font-weight: 700; color: #1a1a2e; }
     .stat-card .sub { font-size: 0.8rem; color: #94a3b8; margin-top: 2px; }
     .chart-container { background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 20px; }
-    .chart-wrapper { position: relative; height: 400px; }
+    .chart-wrapper { position: relative; height: 350px; }
     .chart-title { font-size: 1.1rem; font-weight: 600; margin-bottom: 15px; color: #1a1a2e; }
     .view-toggle { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
     .view-toggle button { padding: 8px 16px; border: 1px solid #e2e8f0; background: #fff; border-radius: 8px; cursor: pointer; font-size: 0.9rem; transition: all 0.2s; }
@@ -33,8 +33,12 @@
     .data-table th, .data-table td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #e2e8f0; }
     .data-table th { background: #f8fafc; font-weight: 600; color: #475569; position: sticky; top: 0; }
     .data-table tr:hover { background: #f8fafc; }
-    .table-wrapper { max-height: 400px; overflow-y: auto; }
-
+    .tabs { display: flex; gap: 5px; margin-bottom: 20px; border-bottom: 2px solid #e2e8f0; }
+    .tab { padding: 12px 24px; cursor: pointer; border: none; background: none; font-size: 1rem; color: #64748b; border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all 0.2s; }
+    .tab.active { color: #3b82f6; border-bottom-color: #3b82f6; font-weight: 600; }
+    .tab:hover { color: #3b82f6; }
+    .comparison-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    @media (max-width: 768px) { .comparison-row { grid-template-columns: 1fr; } }
   </style>
 </head>
 <body>
@@ -42,288 +46,325 @@
   <script type="text/babel">
     const { useState, useEffect, useRef, useMemo } = React;
 
-    // Raw daily data with day of week - re-aggregated from source
-    // Format: [date, quantity, dayOfWeek (0=Sun, 1=Mon, ... 6=Sat)]
-    const RAW = [
-      ["2024-07-02",129,2],["2024-07-03",22,3],["2024-07-09",204,2],["2024-07-10",18,3],["2024-07-11",66,4],
-      ["2024-07-12",430,5],["2024-07-13",20,6],["2024-07-15",25,1],["2024-07-16",55,2],["2024-07-17",193,3],
-      ["2024-07-18",179,4],["2024-07-19",165,5],["2024-07-20",32,6],["2024-07-23",82,2],["2024-07-24",35,3],
-      ["2024-07-25",159,4],["2024-07-26",137,5],["2024-07-29",36,1],["2024-07-30",101,2],["2024-07-31",127,3],
-      ["2024-08-01",128,4],["2024-08-03",50,6],["2024-08-05",28,1],["2024-08-06",100,2],["2024-08-07",63,3],
-      ["2024-08-09",42,5],["2024-08-12",61,1],["2024-08-14",75,3],["2024-08-15",51,4],["2024-08-16",25,5],
-      ["2024-08-23",26,5],["2024-08-24",15,6],["2024-08-27",25,2],["2024-09-02",15,1],["2024-09-06",21,5],
-      ["2024-09-13",277,5],["2024-09-19",83,4],["2024-09-24",112,2],["2024-09-25",79,3],["2024-09-26",310,4],
-      ["2024-09-28",20,6],["2024-09-30",89,1],["2024-10-01",112,2],["2024-10-02",44,3],["2024-10-04",224,5],
-      ["2024-10-08",112,2],["2024-10-10",118,4],["2024-10-11",37,5],["2024-10-14",36,1],["2024-10-15",20,2],
-      ["2024-10-17",213,4],["2024-10-18",49,5],["2024-10-23",137,3],["2024-10-24",81,4],["2024-10-25",229,5],
-      ["2024-10-29",196,2],["2024-10-30",183,3],["2024-10-31",136,4],["2024-11-01",194,5],["2024-11-04",325,1],
-      ["2024-11-05",39,2],["2024-11-06",270,3],["2024-11-07",412,4],["2024-11-08",269,5],["2024-11-12",173,2],
-      ["2024-11-13",412,3],["2024-11-14",512,4],["2024-11-15",476,5],["2024-11-18",413,1],["2024-11-19",196,2],
-      ["2024-11-20",351,3],["2024-11-21",417,4],["2024-11-22",435,5],["2024-11-25",219,1],["2024-11-26",110,2],
-      ["2024-12-02",55,1],["2024-12-03",111,2],["2024-12-04",126,3],["2024-12-05",603,4],["2024-12-06",506,5],
-      ["2024-12-07",3,6],["2024-12-09",313,1],["2024-12-10",187,2],["2024-12-11",195,3],["2024-12-12",575,4],
-      ["2024-12-13",109,5],["2024-12-14",55,6],["2024-12-16",236,1],["2024-12-17",234,2],["2024-12-18",266,3],
-      ["2024-12-19",226,4],["2024-12-20",36,5],["2024-12-23",69,1],["2024-12-30",20,1],["2025-01-07",71,2],
-      ["2025-01-13",121,1],["2025-01-16",332,4],["2025-01-17",454,5],["2025-01-21",297,2],["2025-01-24",350,5],
-      ["2025-01-29",93,3],["2025-01-30",367,4],["2025-02-04",94,2],["2025-02-05",166,3],["2025-02-06",80,4],
-      ["2025-02-07",623,5],["2025-02-10",137,1],["2025-02-11",88,2],["2025-02-12",240,3],["2025-02-13",283,4],
-      ["2025-02-14",430,5],["2025-02-17",166,1],["2025-02-18",99,2],["2025-02-21",240,5],["2025-02-24",303,1],
-      ["2025-02-25",351,2],["2025-02-26",294,3],["2025-02-27",293,4],["2025-02-28",564,5],["2025-03-01",22,6],
-      ["2025-03-03",368,1],["2025-03-04",444,2],["2025-03-05",220,3],["2025-03-06",454,4],["2025-03-07",671,5],
-      ["2025-03-10",284,1],["2025-03-11",617,2],["2025-03-12",618,3],["2025-03-13",625,4],["2025-03-14",732,5],
-      ["2025-03-17",253,1],["2025-03-18",423,2],["2025-03-19",481,3],["2025-03-20",520,4],["2025-03-21",201,5],
-      ["2025-03-24",678,1],["2025-03-25",588,2],["2025-03-26",753,3],["2025-03-27",826,4],["2025-03-28",558,5],
-      ["2025-04-01",574,2],["2025-04-02",266,3],["2025-04-03",610,4],["2025-04-04",744,5],["2025-04-05",15,6],
-      ["2025-04-07",716,1],["2025-04-08",464,2],["2025-04-09",681,4],["2025-04-10",563,4],["2025-04-11",253,5],
-      ["2025-04-14",170,1],["2025-04-15",357,2],["2025-04-16",472,3],["2025-04-17",531,4],["2025-04-18",203,5],
-      ["2025-04-19",33,6],["2025-04-23",346,3],["2025-04-24",309,4],["2025-04-25",540,5],["2025-04-28",138,1],
-      ["2025-05-01",294,4],["2025-05-02",707,5],["2025-05-05",119,1],["2025-05-06",90,2],["2025-05-07",80,3],
-      ["2025-05-08",253,4],["2025-05-09",330,5],["2025-05-12",21,1],["2025-05-13",207,2],["2025-05-14",479,3],
-      ["2025-05-15",493,4],["2025-05-16",424,5],["2025-05-19",77,1],["2025-05-20",217,2],["2025-05-21",111,3],
-      ["2025-05-22",412,4],["2025-05-23",40,5],["2025-05-27",97,2],["2025-05-28",191,3],["2025-05-29",222,4],
-      ["2025-05-30",144,5],["2025-06-03",110,2],["2025-06-09",17,1],["2025-06-10",143,2],["2025-06-13",23,5],
-      ["2025-06-16",62,1],["2025-06-17",54,2],["2025-06-18",109,3],["2025-06-19",65,4],["2025-06-20",194,5],
-      ["2025-06-21",27,6],["2025-06-23",22,1],["2025-06-24",21,2],["2025-06-25",58,3],["2025-06-26",318,4],
-      ["2025-06-27",219,5],["2025-06-28",50,6],["2025-06-30",95,1]
+    // FY25 Data (July 2024 - June 2025) - Actual attendance only
+    const FY25_RAW = [
+      ["2024-07-02",129],["2024-07-03",22],["2024-07-09",204],["2024-07-10",18],["2024-07-11",66],
+      ["2024-07-12",430],["2024-07-13",20],["2024-07-15",25],["2024-07-16",55],["2024-07-17",193],
+      ["2024-07-18",179],["2024-07-19",165],["2024-07-20",32],["2024-07-23",82],["2024-07-24",35],
+      ["2024-07-25",159],["2024-07-26",137],["2024-07-29",36],["2024-07-30",101],["2024-07-31",127],
+      ["2024-08-01",128],["2024-08-03",50],["2024-08-05",28],["2024-08-06",100],["2024-08-07",63],
+      ["2024-08-09",42],["2024-08-12",61],["2024-08-14",75],["2024-08-15",51],["2024-08-16",25],
+      ["2024-08-23",26],["2024-08-24",15],["2024-08-27",25],["2024-09-02",15],["2024-09-06",21],
+      ["2024-09-13",277],["2024-09-19",83],["2024-09-24",112],["2024-09-25",79],["2024-09-26",310],
+      ["2024-09-28",20],["2024-09-30",89],["2024-10-01",112],["2024-10-02",44],["2024-10-04",224],
+      ["2024-10-08",112],["2024-10-10",118],["2024-10-11",37],["2024-10-14",36],["2024-10-15",20],
+      ["2024-10-17",213],["2024-10-18",49],["2024-10-23",137],["2024-10-24",81],["2024-10-25",229],
+      ["2024-10-29",196],["2024-10-30",183],["2024-10-31",136],["2024-11-01",194],["2024-11-04",325],
+      ["2024-11-05",39],["2024-11-06",270],["2024-11-07",412],["2024-11-08",269],["2024-11-12",173],
+      ["2024-11-13",412],["2024-11-14",512],["2024-11-15",476],["2024-11-18",413],["2024-11-19",196],
+      ["2024-11-20",351],["2024-11-21",417],["2024-11-22",435],["2024-11-25",219],["2024-11-26",110],
+      ["2024-12-02",55],["2024-12-03",111],["2024-12-04",126],["2024-12-05",603],["2024-12-06",506],
+      ["2024-12-07",3],["2024-12-09",313],["2024-12-10",187],["2024-12-11",195],["2024-12-12",575],
+      ["2024-12-13",109],["2024-12-14",55],["2024-12-16",236],["2024-12-17",234],["2024-12-18",266],
+      ["2024-12-19",226],["2024-12-20",36],["2024-12-23",69],["2024-12-30",20],["2025-01-07",71],
+      ["2025-01-13",121],["2025-01-16",332],["2025-01-17",454],["2025-01-21",297],["2025-01-24",350],
+      ["2025-01-29",93],["2025-01-30",367],["2025-02-04",94],["2025-02-05",166],["2025-02-06",80],
+      ["2025-02-07",623],["2025-02-10",137],["2025-02-11",88],["2025-02-12",240],["2025-02-13",283],
+      ["2025-02-14",430],["2025-02-17",166],["2025-02-18",99],["2025-02-21",240],["2025-02-24",303],
+      ["2025-02-25",351],["2025-02-26",294],["2025-02-27",293],["2025-02-28",564],["2025-03-01",22],
+      ["2025-03-03",368],["2025-03-04",444],["2025-03-05",220],["2025-03-06",454],["2025-03-07",671],
+      ["2025-03-10",284],["2025-03-11",617],["2025-03-12",618],["2025-03-13",625],["2025-03-14",732],
+      ["2025-03-17",253],["2025-03-18",423],["2025-03-19",481],["2025-03-20",520],["2025-03-21",201],
+      ["2025-03-24",678],["2025-03-25",588],["2025-03-26",753],["2025-03-27",826],["2025-03-28",558],
+      ["2025-04-01",574],["2025-04-02",266],["2025-04-03",610],["2025-04-04",744],["2025-04-05",15],
+      ["2025-04-07",716],["2025-04-08",464],["2025-04-09",681],["2025-04-10",563],["2025-04-11",253],
+      ["2025-04-14",170],["2025-04-15",357],["2025-04-16",472],["2025-04-17",531],["2025-04-18",203],
+      ["2025-04-19",33],["2025-04-23",346],["2025-04-24",309],["2025-04-25",540],["2025-04-28",138],
+      ["2025-05-01",294],["2025-05-02",707],["2025-05-05",119],["2025-05-06",90],["2025-05-07",80],
+      ["2025-05-08",253],["2025-05-09",330],["2025-05-12",21],["2025-05-13",207],["2025-05-14",479],
+      ["2025-05-15",493],["2025-05-16",424],["2025-05-19",77],["2025-05-20",217],["2025-05-21",111],
+      ["2025-05-22",412],["2025-05-23",40],["2025-05-27",97],["2025-05-28",191],["2025-05-29",222],
+      ["2025-05-30",144],["2025-06-03",110],["2025-06-09",17],["2025-06-10",143],["2025-06-13",23],
+      ["2025-06-16",62],["2025-06-17",54],["2025-06-18",109],["2025-06-19",65],["2025-06-20",194],
+      ["2025-06-21",27],["2025-06-23",22],["2025-06-24",21],["2025-06-25",58],["2025-06-26",318],
+      ["2025-06-27",219],["2025-06-28",50],["2025-06-30",95]
+    ];
+
+    // FY26 Data (July 2025 - June 2026) - [date, actual, held]
+    const FY26_RAW = [
+      ["2025-07-01",45,0],["2025-07-03",0,0],["2025-07-07",81,0],["2025-07-08",62,0],["2025-07-09",30,0],
+      ["2025-07-10",296,0],["2025-07-11",200,0],["2025-07-12",254,0],["2025-07-14",131,0],["2025-07-15",112,0],
+      ["2025-07-16",30,0],["2025-07-17",295,0],["2025-07-18",0,0],["2025-07-21",111,0],["2025-07-22",97,0],
+      ["2025-07-23",142,0],["2025-07-24",79,0],["2025-07-25",140,0],["2025-07-26",28,0],["2025-07-28",22,0],
+      ["2025-07-29",276,0],["2025-07-30",22,0],["2025-07-31",104,0],["2025-08-01",28,0],["2025-08-04",0,0],
+      ["2025-08-05",21,0],["2025-08-07",21,0],["2025-08-09",23,0],["2025-08-11",30,0],["2025-08-19",0,0],
+      ["2025-08-20",16,0],["2025-08-21",33,0],["2025-08-29",35,0],["2025-09-05",25,0],["2025-09-08",0,0],
+      ["2025-09-09",58,0],["2025-09-14",0,0],["2025-09-16",0,0],["2025-09-18",0,0],["2025-09-19",225,0],
+      ["2025-09-24",69,0],["2025-09-25",22,0],["2025-09-26",248,0],["2025-10-01",2,0],["2025-10-02",167,0],
+      ["2025-10-03",23,0],["2025-10-10",0,0],["2025-10-12",18,0],["2025-10-13",39,0],["2025-10-14",83,0],
+      ["2025-10-15",181,0],["2025-10-16",55,0],["2025-10-17",28,0],["2025-10-22",8,0],["2025-10-23",123,0],
+      ["2025-10-24",296,0],["2025-10-27",54,0],["2025-10-29",182,0],["2025-10-30",348,0],["2025-10-31",196,0],
+      ["2025-11-03",236,0],["2025-11-04",117,0],["2025-11-05",244,0],["2025-11-06",498,0],["2025-11-07",247,0],
+      ["2025-11-10",360,0],["2025-11-12",406,0],["2025-11-13",459,0],["2025-11-14",256,0],["2025-11-17",169,0],
+      ["2025-11-18",0,0],["2025-11-19",134,0],["2025-11-20",250,0],["2025-11-21",194,0],["2025-11-24",80,0],
+      ["2025-11-25",250,0],["2025-11-29",65,0],["2025-12-01",107,0],["2025-12-02",129,0],["2025-12-03",15,0],
+      ["2025-12-04",167,0],["2025-12-05",246,0],["2025-12-08",162,154],["2025-12-09",95,0],["2025-12-10",214,129],
+      ["2025-12-11",170,152],["2025-12-12",0,616],["2025-12-13",52,0],["2025-12-15",80,55],["2025-12-16",148,36],
+      ["2025-12-17",0,294],["2025-12-18",66,411],["2025-12-28",0,0],["2026-01-06",0,0],["2026-01-08",0,175],
+      ["2026-01-09",0,222],["2026-01-10",0,20],["2026-01-14",0,135],["2026-01-16",0,493],["2026-01-17",0,72],
+      ["2026-01-20",0,50],["2026-01-21",0,110],["2026-01-22",132,252],["2026-01-23",142,171],["2026-01-28",0,85],
+      ["2026-01-29",0,131],["2026-01-30",0,455],["2026-02-03",112,0],["2026-02-05",0,116],["2026-02-06",0,264],
+      ["2026-02-11",0,60],["2026-02-12",123,468],["2026-02-13",0,455],["2026-02-16",0,61],["2026-02-17",0,94],
+      ["2026-02-18",0,125],["2026-02-19",40,352],["2026-02-20",66,383],["2026-02-23",0,462],["2026-02-24",0,66],
+      ["2026-02-25",0,197],["2026-02-26",0,396],["2026-02-27",0,171],["2026-03-04",0,286],["2026-03-05",0,571],
+      ["2026-03-06",0,250],["2026-03-09",133,154],["2026-03-10",0,357],["2026-03-11",0,557],["2026-03-12",0,555],
+      ["2026-03-13",0,297],["2026-03-16",54,71],["2026-03-18",0,192],["2026-03-19",0,51],["2026-03-20",0,455],
+      ["2026-03-24",0,375],["2026-03-25",0,320],["2026-03-26",0,440],["2026-03-27",38,99],["2026-03-30",0,85],
+      ["2026-04-01",0,165],["2026-04-02",0,762],["2026-04-03",0,105],["2026-04-07",0,28],["2026-04-09",0,227],
+      ["2026-04-10",0,110],["2026-04-14",0,116],["2026-04-16",0,356],["2026-04-17",0,234],["2026-04-21",0,165],
+      ["2026-04-22",0,94],["2026-04-24",113,108],["2026-04-29",0,189],["2026-04-30",0,20],["2026-05-01",0,257],
+      ["2026-05-05",0,138],["2026-05-08",0,219],["2026-05-14",0,99],["2026-05-21",0,162],["2026-05-29",0,125],
+      ["2026-06-22",0,55]
     ];
 
     const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
     const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const FY_MONTHS = ['Jul','Aug','Sep','Oct','Nov','Dec','Jan','Feb','Mar','Apr','May','Jun'];
 
     function App() {
-      const [dateRange, setDateRange] = useState({start:'', end:''});
+      const [activeTab, setActiveTab] = useState('fy25');
+
+      return (
+        <div className="container">
+          <h1>📊 Field Trip Attendance Dashboard</h1>
+          <p className="subtitle">Discovery Place Science</p>
+
+          <div className="tabs">
+            <button className={`tab ${activeTab === 'fy25' ? 'active' : ''}`} onClick={() => setActiveTab('fy25')}>FY25</button>
+            <button className={`tab ${activeTab === 'fy26' ? 'active' : ''}`} onClick={() => setActiveTab('fy26')}>FY26</button>
+            <button className={`tab ${activeTab === 'compare' ? 'active' : ''}`} onClick={() => setActiveTab('compare')}>Compare</button>
+          </div>
+
+          {activeTab === 'fy25' && <FYSection data={FY25_RAW} fy="25" hasHeld={false} />}
+          {activeTab === 'fy26' && <FYSection data={FY26_RAW} fy="26" hasHeld={true} />}
+          {activeTab === 'compare' && <CompareSection />}
+        </div>
+      );
+    }
+
+    function FYSection({ data, fy, hasHeld }) {
       const [viewMode, setViewMode] = useState('daily');
-      const [showTable, setShowTable] = useState(false);
       const chartRef = useRef(null);
       const chartInstance = useRef(null);
 
-      const data = useMemo(() => RAW.map(r => ({
-        dateStr: r[0], 
-        visitors: r[1], 
-        dow: r[2],
-        date: new Date(r[0] + 'T12:00:00')
-      })), []);
-
-      const filteredData = useMemo(() => {
-        return data.filter(row => {
-          if (dateRange.start && row.dateStr < dateRange.start) return false;
-          if (dateRange.end && row.dateStr > dateRange.end) return false;
-          return true;
-        });
-      }, [data, dateRange]);
+      const processed = useMemo(() => {
+        return data.map(r => ({
+          dateStr: r[0],
+          actual: hasHeld ? r[1] : r[1],
+          held: hasHeld ? r[2] : 0,
+          total: hasHeld ? (r[1] + Math.max(0, r[2])) : r[1],
+          date: new Date(r[0] + 'T12:00:00'),
+          dow: new Date(r[0] + 'T12:00:00').getDay()
+        }));
+      }, [data, hasHeld]);
 
       const stats = useMemo(() => {
-        const total = filteredData.reduce((s,r) => s + r.visitors, 0);
-        const days = filteredData.length;
-        const avg = days ? Math.round(total / days) : 0;
-        const peak = filteredData.length ? Math.max(...filteredData.map(r => r.visitors)) : 0;
-        const peakDay = filteredData.find(r => r.visitors === peak);
-        
-        // Day of week breakdown
+        const totalActual = processed.reduce((s, r) => s + r.actual, 0);
+        const totalHeld = processed.reduce((s, r) => s + Math.max(0, r.held), 0);
+        const days = processed.filter(r => r.actual > 0 || r.held > 0).length;
+        const avgActual = days ? Math.round(totalActual / days) : 0;
+        const peak = Math.max(...processed.map(r => r.total));
+        const peakDay = processed.find(r => r.total === peak);
         const byDow = [0,0,0,0,0,0,0];
         const countByDow = [0,0,0,0,0,0,0];
-        filteredData.forEach(r => { byDow[r.dow] += r.visitors; countByDow[r.dow]++; });
-        
-        return { total, days, avg, peak, peakDate: peakDay ? peakDay.dateStr : '', peakDow: peakDay ? peakDay.dow : 0, byDow, countByDow };
-      }, [filteredData]);
+        processed.forEach(r => { 
+          byDow[r.dow] += r.total; 
+          if (r.total > 0) countByDow[r.dow]++; 
+        });
+        return { totalActual, totalHeld, days, avgActual, peak, peakDate: peakDay?.dateStr, peakDow: peakDay?.dow, byDow, countByDow };
+      }, [processed]);
 
       const monthlyData = useMemo(() => {
         const byMonth = {};
-        filteredData.forEach(row => {
+        processed.forEach(row => {
           const m = row.date.getMonth();
           const y = row.date.getFullYear();
           const fy = m >= 6 ? y : y - 1;
           const key = `${fy}-${String(m).padStart(2,'0')}`;
-          if (!byMonth[key]) byMonth[key] = {month: m, fy, total: 0, days: 0};
-          byMonth[key].total += row.visitors;
-          byMonth[key].days++;
+          if (!byMonth[key]) byMonth[key] = {month: m, fy, actual: 0, held: 0, days: 0};
+          byMonth[key].actual += row.actual;
+          byMonth[key].held += Math.max(0, row.held);
+          if (row.total > 0) byMonth[key].days++;
         });
         return Object.values(byMonth).sort((a,b) => {
           const aIdx = a.month >= 6 ? a.month - 6 : a.month + 6;
           const bIdx = b.month >= 6 ? b.month - 6 : b.month + 6;
           return (a.fy - b.fy) || (aIdx - bIdx);
         });
-      }, [filteredData]);
+      }, [processed]);
 
-      const chartData = useMemo(() => {
+      useEffect(() => {
+        if (!chartRef.current) return;
+        if (chartInstance.current) chartInstance.current.destroy();
+
+        let config;
         if (viewMode === 'daily') {
-          return {
-            labels: filteredData.map(r => r.dateStr),
-            datasets: [{
-              label: 'Daily Visitors',
-              data: filteredData.map(r => r.visitors),
-              borderColor: '#3b82f6',
-              backgroundColor: '#3b82f640',
+          const datasets = [{
+            label: 'Actual Attendance',
+            data: processed.map(r => r.actual),
+            borderColor: '#3b82f6',
+            backgroundColor: '#3b82f640',
+            fill: true,
+            tension: 0.3,
+            pointRadius: 2
+          }];
+          if (hasHeld) {
+            datasets.push({
+              label: 'Booked (Held)',
+              data: processed.map(r => Math.max(0, r.held)),
+              borderColor: '#94a3b8',
+              backgroundColor: '#94a3b820',
+              borderDash: [5, 5],
               fill: true,
               tension: 0.3,
               pointRadius: 2
-            }]
+            });
+          }
+          config = {
+            type: 'line',
+            data: { labels: processed.map(r => r.dateStr), datasets },
+            options: {
+              responsive: true, maintainAspectRatio: false,
+              interaction: { intersect: false, mode: 'index' },
+              plugins: { legend: { display: hasHeld } },
+              scales: {
+                x: { ticks: { maxTicksLimit: 12, callback: function(v) { return this.getLabelForValue(v).substring(5); }}},
+                y: { beginAtZero: true, ticks: { callback: v => v.toLocaleString() }}
+              }
+            }
           };
         } else if (viewMode === 'monthly') {
-          return {
-            labels: monthlyData.map(m => `${MONTHS[m.month]} ${m.fy + 1}`),
-            datasets: [{
-              label: 'Monthly Visitors',
-              data: monthlyData.map(m => m.total),
-              backgroundColor: '#3b82f6',
+          const datasets = [{
+            label: 'Actual',
+            data: monthlyData.map(m => m.actual),
+            backgroundColor: '#3b82f6',
+            borderRadius: 6
+          }];
+          if (hasHeld) {
+            datasets.push({
+              label: 'Booked',
+              data: monthlyData.map(m => m.held),
+              backgroundColor: '#94a3b8',
               borderRadius: 6
-            }]
+            });
+          }
+          config = {
+            type: 'bar',
+            data: { labels: monthlyData.map(m => `${MONTHS[m.month]}`), datasets },
+            options: {
+              responsive: true, maintainAspectRatio: false,
+              plugins: { legend: { display: hasHeld } },
+              scales: { y: { beginAtZero: true, stacked: true, ticks: { callback: v => v.toLocaleString() }}, x: { stacked: true }}
+            }
           };
         } else {
-          return {
-            labels: DAYS,
-            datasets: [{
-              label: 'Total by Day of Week',
-              data: stats.byDow,
-              backgroundColor: '#3b82f6',
-              borderRadius: 6
-            }]
+          config = {
+            type: 'bar',
+            data: {
+              labels: DAYS,
+              datasets: [{ label: 'Total', data: stats.byDow, backgroundColor: '#3b82f6', borderRadius: 6 }]
+            },
+            options: {
+              responsive: true, maintainAspectRatio: false,
+              plugins: { legend: { display: false }},
+              scales: { y: { beginAtZero: true, ticks: { callback: v => v.toLocaleString() }}}
+            }
           };
         }
-      }, [filteredData, monthlyData, viewMode, stats]);
-
-      useEffect(() => {
-        if (!chartRef.current || !chartData.datasets.length) return;
-        if (chartInstance.current) chartInstance.current.destroy();
-        
-        const config = viewMode === 'daily' ? {
-          type: 'line',
-          data: chartData,
-          options: {
-            responsive: true, maintainAspectRatio: false,
-            interaction: { intersect: false, mode: 'index' },
-            plugins: { 
-              tooltip: { callbacks: { 
-                title: ctx => { const d = new Date(ctx[0].label + 'T12:00:00'); return `${DAYS[d.getDay()]}, ${formatDate(ctx[0].label)}`; },
-                label: ctx => `${ctx.parsed.y.toLocaleString()} visitors` 
-              }},
-              legend: { display: false }
-            },
-            scales: { 
-              x: { title: { display: true, text: 'Date' }, ticks: { maxTicksLimit: 15, callback: function(val, idx) { return this.getLabelForValue(val).substring(5); }}},
-              y: { beginAtZero: true, title: { display: true, text: 'Visitors' }, ticks: { callback: v => v.toLocaleString() }}
-            }
-          }
-        } : {
-          type: 'bar',
-          data: chartData,
-          options: {
-            responsive: true, maintainAspectRatio: false,
-            plugins: { 
-              tooltip: { callbacks: { label: ctx => `${ctx.parsed.y.toLocaleString()} visitors` }},
-              legend: { display: false }
-            },
-            scales: { 
-              y: { beginAtZero: true, title: { display: true, text: 'Visitors' }, ticks: { callback: v => v.toLocaleString() }}
-            }
-          }
-        };
-        
         chartInstance.current = new Chart(chartRef.current, config);
-      }, [chartData, viewMode]);
+      }, [processed, monthlyData, viewMode, hasHeld, stats]);
 
       const formatDate = (dateStr) => {
+        if (!dateStr) return '';
         const d = new Date(dateStr + 'T12:00:00');
         return d.toLocaleDateString('en-US', {month: 'short', day: 'numeric', year: 'numeric'});
       };
 
-      const getDayClass = (dow) => {
-        if (dow === 0) return 'day-sun';
-        if (dow === 6) return 'day-sat';
-        if (dow === 5) return 'day-fri';
-        return '';
-      };
-
       return (
-        <div className="container">
-          <h1>📊 Field Trip Attendance Dashboard</h1>
-          <p className="subtitle">Discovery Place Science — FY25 (July 2024 – June 2025)</p>
-
-          <div className="filters">
-            <div className="filter-group">
-              <label>Start Date</label>
-              <input type="date" value={dateRange.start} onChange={e => setDateRange(p => ({...p, start: e.target.value}))} min="2024-07-01" max="2025-06-30" />
+        <div>
+          <h2>FY{fy} — {fy === '25' ? 'July 2024 – June 2025' : 'July 2025 – June 2026'}</h2>
+          
+          {hasHeld && (
+            <div className="legend">
+              <div className="legend-item"><div className="legend-dot" style={{background:'#3b82f6'}}></div> Actual Attendance</div>
+              <div className="legend-item"><div className="legend-dot" style={{background:'#94a3b8'}}></div> Booked (Future)</div>
             </div>
-            <div className="filter-group">
-              <label>End Date</label>
-              <input type="date" value={dateRange.end} onChange={e => setDateRange(p => ({...p, end: e.target.value}))} min="2024-07-01" max="2025-06-30" />
-            </div>
-            <button onClick={() => setDateRange({start:'', end:''})} style={{padding:'10px 16px', border:'1px solid #e2e8f0', background:'#fff', borderRadius:'8px', cursor:'pointer'}}>Reset</button>
-          </div>
+          )}
 
           <div className="stats">
             <div className="stat-card">
-              <div className="label">Total Visitors</div>
-              <div className="value">{stats.total.toLocaleString()}</div>
+              <div className="label">{hasHeld ? 'Actual Visitors' : 'Total Visitors'}</div>
+              <div className="value">{stats.totalActual.toLocaleString()}</div>
             </div>
+            {hasHeld && (
+              <div className="stat-card">
+                <div className="label">Booked (Future)</div>
+                <div className="value">{stats.totalHeld.toLocaleString()}</div>
+              </div>
+            )}
             <div className="stat-card">
               <div className="label">Days with Trips</div>
               <div className="value">{stats.days}</div>
             </div>
             <div className="stat-card">
-              <div className="label">Avg per Day</div>
-              <div className="value">{stats.avg.toLocaleString()}</div>
-            </div>
-            <div className="stat-card">
               <div className="label">Peak Day</div>
               <div className="value">{stats.peak.toLocaleString()}</div>
-              <div className="sub">{stats.peakDate ? `${DAYS[stats.peakDow]}, ${formatDate(stats.peakDate)}` : ''}</div>
+              <div className="sub">{formatDate(stats.peakDate)}</div>
             </div>
           </div>
 
           <div className="chart-container">
             <div className="view-toggle">
-              <button className={viewMode === 'daily' ? 'active' : ''} onClick={() => setViewMode('daily')}>Daily View</button>
-              <button className={viewMode === 'monthly' ? 'active' : ''} onClick={() => setViewMode('monthly')}>Monthly View</button>
+              <button className={viewMode === 'daily' ? 'active' : ''} onClick={() => setViewMode('daily')}>Daily</button>
+              <button className={viewMode === 'monthly' ? 'active' : ''} onClick={() => setViewMode('monthly')}>Monthly</button>
               <button className={viewMode === 'dow' ? 'active' : ''} onClick={() => setViewMode('dow')}>By Day of Week</button>
-              <button onClick={() => setShowTable(!showTable)} style={{marginLeft:'auto', background: showTable ? '#fee2e2' : '#fff'}}>
-                {showTable ? 'Hide' : 'Show'} Data Table
-              </button>
             </div>
             <div className="chart-wrapper">
               <canvas ref={chartRef}></canvas>
             </div>
           </div>
 
-          {showTable && (
-            <div className="chart-container">
-              <div className="chart-title">Raw Data (for verification)</div>
-              <p style={{fontSize:'0.85rem', color:'#64748b', marginBottom:'10px'}}>
-                <span className="day-fri">■ Friday</span> &nbsp; <span className="day-sat">■ Saturday</span> &nbsp; <span className="day-sun">■ Sunday</span>
-              </p>
-              <div className="table-wrapper">
-                <table className="data-table">
-                  <thead>
-                    <tr>
-                      <th>Date</th>
-                      <th>Day</th>
-                      <th>Visitors</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredData.map((r, i) => (
-                      <tr key={i}>
-                        <td>{formatDate(r.dateStr)}</td>
-                        <td>{DAYS[r.dow]}</td>
-                        <td>{r.visitors.toLocaleString()}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
+          <div className="chart-container">
+            <div className="chart-title">Monthly Breakdown</div>
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Month</th>
+                  <th>Actual</th>
+                  {hasHeld && <th>Booked</th>}
+                  <th>Days</th>
+                  <th>Avg/Day</th>
+                </tr>
+              </thead>
+              <tbody>
+                {monthlyData.map((m, i) => (
+                  <tr key={i}>
+                    <td>{MONTHS[m.month]} {m.fy + 1}</td>
+                    <td>{m.actual.toLocaleString()}</td>
+                    {hasHeld && <td>{m.held.toLocaleString()}</td>}
+                    <td>{m.days}</td>
+                    <td>{m.days ? Math.round((m.actual + m.held) / m.days).toLocaleString() : 0}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
 
           <div className="chart-container">
             <div className="chart-title">Day of Week Summary</div>
             <table className="data-table">
               <thead>
-                <tr>
-                  <th>Day</th>
-                  <th>Total Visitors</th>
-                  <th># of Days</th>
-                  <th>Avg per Day</th>
-                </tr>
+                <tr><th>Day</th><th>Total</th><th># Days</th><th>Avg</th></tr>
               </thead>
               <tbody>
                 {DAYS.map((day, i) => (
@@ -334,6 +375,117 @@
                     <td>{stats.countByDow[i] ? Math.round(stats.byDow[i] / stats.countByDow[i]).toLocaleString() : 0}</td>
                   </tr>
                 ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      );
+    }
+
+    function CompareSection() {
+      const chartRef = useRef(null);
+      const chartInstance = useRef(null);
+
+      const fy25Monthly = useMemo(() => {
+        const byMonth = {};
+        FY25_RAW.forEach(r => {
+          const d = new Date(r[0] + 'T12:00:00');
+          const m = d.getMonth();
+          const idx = m >= 6 ? m - 6 : m + 6;
+          if (!byMonth[idx]) byMonth[idx] = 0;
+          byMonth[idx] += r[1];
+        });
+        return FY_MONTHS.map((_, i) => byMonth[i] || 0);
+      }, []);
+
+      const fy26Monthly = useMemo(() => {
+        const byMonth = {};
+        FY26_RAW.forEach(r => {
+          const d = new Date(r[0] + 'T12:00:00');
+          const m = d.getMonth();
+          const idx = m >= 6 ? m - 6 : m + 6;
+          if (!byMonth[idx]) byMonth[idx] = 0;
+          byMonth[idx] += r[1] + Math.max(0, r[2]);
+        });
+        return FY_MONTHS.map((_, i) => byMonth[i] || 0);
+      }, []);
+
+      useEffect(() => {
+        if (!chartRef.current) return;
+        if (chartInstance.current) chartInstance.current.destroy();
+        chartInstance.current = new Chart(chartRef.current, {
+          type: 'bar',
+          data: {
+            labels: FY_MONTHS,
+            datasets: [
+              { label: 'FY25', data: fy25Monthly, backgroundColor: '#3b82f6', borderRadius: 6 },
+              { label: 'FY26 (Actual + Booked)', data: fy26Monthly, backgroundColor: '#10b981', borderRadius: 6 }
+            ]
+          },
+          options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { display: true }},
+            scales: { y: { beginAtZero: true, ticks: { callback: v => v.toLocaleString() }}}
+          }
+        });
+      }, [fy25Monthly, fy26Monthly]);
+
+      const fy25Total = fy25Monthly.reduce((a, b) => a + b, 0);
+      const fy26Total = fy26Monthly.reduce((a, b) => a + b, 0);
+      const diff = fy26Total - fy25Total;
+      const pctChange = fy25Total ? ((diff / fy25Total) * 100).toFixed(1) : 0;
+
+      return (
+        <div>
+          <h2>Year-over-Year Comparison</h2>
+
+          <div className="stats">
+            <div className="stat-card">
+              <div className="label">FY25 Total</div>
+              <div className="value">{fy25Total.toLocaleString()}</div>
+            </div>
+            <div className="stat-card">
+              <div className="label">FY26 Total (Actual + Booked)</div>
+              <div className="value">{fy26Total.toLocaleString()}</div>
+            </div>
+            <div className="stat-card">
+              <div className="label">Change</div>
+              <div className="value" style={{color: diff >= 0 ? '#10b981' : '#ef4444'}}>
+                {diff >= 0 ? '+' : ''}{diff.toLocaleString()}
+              </div>
+              <div className="sub">{pctChange}%</div>
+            </div>
+          </div>
+
+          <div className="chart-container">
+            <div className="chart-title">Monthly Comparison</div>
+            <div className="chart-wrapper">
+              <canvas ref={chartRef}></canvas>
+            </div>
+          </div>
+
+          <div className="chart-container">
+            <div className="chart-title">Month-by-Month Detail</div>
+            <table className="data-table">
+              <thead>
+                <tr><th>Month</th><th>FY25</th><th>FY26</th><th>Difference</th><th>% Change</th></tr>
+              </thead>
+              <tbody>
+                {FY_MONTHS.map((month, i) => {
+                  const v25 = fy25Monthly[i];
+                  const v26 = fy26Monthly[i];
+                  const d = v26 - v25;
+                  const pct = v25 ? ((d / v25) * 100).toFixed(1) : (v26 > 0 ? '∞' : '0');
+                  return (
+                    <tr key={i}>
+                      <td>{month}</td>
+                      <td>{v25.toLocaleString()}</td>
+                      <td>{v26.toLocaleString()}</td>
+                      <td style={{color: d >= 0 ? '#10b981' : '#ef4444'}}>{d >= 0 ? '+' : ''}{d.toLocaleString()}</td>
+                      <td style={{color: d >= 0 ? '#10b981' : '#ef4444'}}>{pct}%</td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
