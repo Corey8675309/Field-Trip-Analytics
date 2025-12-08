@@ -11,7 +11,7 @@
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f7fa; color: #333; min-height: 100vh; }
-    .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+    .container { max-width: 1600px; margin: 0 auto; padding: 20px; }
     h1 { font-size: 1.75rem; color: #1a1a2e; margin-bottom: 8px; }
     h2 { font-size: 1.35rem; color: #1a1a2e; margin: 30px 0 15px 0; padding-bottom: 8px; border-bottom: 2px solid #e2e8f0; }
     .subtitle { color: #64748b; margin-bottom: 20px; }
@@ -24,7 +24,7 @@
     .stat-card .value { font-size: 1.5rem; font-weight: 700; color: #1a1a2e; }
     .stat-card .sub { font-size: 0.8rem; color: #94a3b8; margin-top: 2px; }
     .chart-container { background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 20px; }
-    .chart-wrapper { position: relative; height: 350px; }
+    .chart-wrapper { position: relative; height: 450px; }
     .chart-title { font-size: 1.1rem; font-weight: 600; margin-bottom: 15px; color: #1a1a2e; }
     .view-toggle { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
     .view-toggle button { padding: 8px 16px; border: 1px solid #e2e8f0; background: #fff; border-radius: 8px; cursor: pointer; font-size: 0.9rem; transition: all 0.2s; }
@@ -37,8 +37,11 @@
     .tab { padding: 12px 24px; cursor: pointer; border: none; background: none; font-size: 1rem; color: #64748b; border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all 0.2s; }
     .tab.active { color: #3b82f6; border-bottom-color: #3b82f6; font-weight: 600; }
     .tab:hover { color: #3b82f6; }
-    .comparison-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-    @media (max-width: 768px) { .comparison-row { grid-template-columns: 1fr; } }
+    .filter-row { display: flex; flex-wrap: wrap; gap: 15px; align-items: flex-end; margin-bottom: 20px; background: #fff; padding: 15px 20px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    .filter-group { display: flex; flex-direction: column; }
+    .filter-group label { font-size: 0.85rem; font-weight: 600; color: #475569; margin-bottom: 6px; }
+    .filter-group input { padding: 10px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.95rem; }
+    .reset-btn { padding: 10px 16px; border: 1px solid #e2e8f0; background: #fff; border-radius: 8px; cursor: pointer; }
   </style>
 </head>
 <body>
@@ -46,7 +49,6 @@
   <script type="text/babel">
     const { useState, useEffect, useRef, useMemo } = React;
 
-    // FY25 Data (July 2024 - June 2025) - Actual attendance only
     const FY25_RAW = [
       ["2024-07-02",129],["2024-07-03",22],["2024-07-09",204],["2024-07-10",18],["2024-07-11",66],
       ["2024-07-12",430],["2024-07-13",20],["2024-07-15",25],["2024-07-16",55],["2024-07-17",193],
@@ -90,7 +92,6 @@
       ["2025-06-27",219],["2025-06-28",50],["2025-06-30",95]
     ];
 
-    // FY26 Data (July 2025 - June 2026) - [date, actual, held]
     const FY26_RAW = [
       ["2025-07-01",45,0],["2025-07-03",0,0],["2025-07-07",81,0],["2025-07-08",62,0],["2025-07-09",30,0],
       ["2025-07-10",296,0],["2025-07-11",200,0],["2025-07-12",254,0],["2025-07-14",131,0],["2025-07-15",112,0],
@@ -154,15 +155,15 @@
 
     function FYSection({ data, fy, hasHeld }) {
       const [viewMode, setViewMode] = useState('daily');
-      const [dateRange, setDateRange] = useState({start:'', end:''});
+      const [dateRange, setDateRange] = useState({ start: '', end: '' });
       const chartRef = useRef(null);
       const chartInstance = useRef(null);
 
       const allProcessed = useMemo(() => {
         return data.map(r => ({
           dateStr: r[0],
-          actual: hasHeld ? r[1] : r[1],
-          held: hasHeld ? r[2] : 0,
+          actual: r[1],
+          held: hasHeld ? Math.max(0, r[2]) : 0,
           total: hasHeld ? (r[1] + Math.max(0, r[2])) : r[1],
           date: new Date(r[0] + 'T12:00:00'),
           dow: new Date(r[0] + 'T12:00:00').getDay()
@@ -179,18 +180,11 @@
 
       const stats = useMemo(() => {
         const totalActual = processed.reduce((s, r) => s + r.actual, 0);
-        const totalHeld = processed.reduce((s, r) => s + Math.max(0, r.held), 0);
+        const totalHeld = processed.reduce((s, r) => s + r.held, 0);
         const days = processed.filter(r => r.actual > 0 || r.held > 0).length;
-        const avgActual = days ? Math.round(totalActual / days) : 0;
         const peak = Math.max(...processed.map(r => r.total));
         const peakDay = processed.find(r => r.total === peak);
-        const byDow = [0,0,0,0,0,0,0];
-        const countByDow = [0,0,0,0,0,0,0];
-        processed.forEach(r => { 
-          byDow[r.dow] += r.total; 
-          if (r.total > 0) countByDow[r.dow]++; 
-        });
-        return { totalActual, totalHeld, days, avgActual, peak, peakDate: peakDay?.dateStr, peakDow: peakDay?.dow, byDow, countByDow };
+        return { totalActual, totalHeld, days, peak, peakDate: peakDay?.dateStr };
       }, [processed]);
 
       const monthlyData = useMemo(() => {
@@ -198,14 +192,14 @@
         processed.forEach(row => {
           const m = row.date.getMonth();
           const y = row.date.getFullYear();
-          const fy = m >= 6 ? y : y - 1;
-          const key = `${fy}-${String(m).padStart(2,'0')}`;
-          if (!byMonth[key]) byMonth[key] = {month: m, fy, actual: 0, held: 0, days: 0};
+          const fyYear = m >= 6 ? y : y - 1;
+          const key = `${fyYear}-${String(m).padStart(2,'0')}`;
+          if (!byMonth[key]) byMonth[key] = { month: m, fy: fyYear, actual: 0, held: 0, days: 0 };
           byMonth[key].actual += row.actual;
-          byMonth[key].held += Math.max(0, row.held);
+          byMonth[key].held += row.held;
           if (row.total > 0) byMonth[key].days++;
         });
-        return Object.values(byMonth).sort((a,b) => {
+        return Object.values(byMonth).sort((a, b) => {
           const aIdx = a.month >= 6 ? a.month - 6 : a.month + 6;
           const bIdx = b.month >= 6 ? b.month - 6 : b.month + 6;
           return (a.fy - b.fy) || (aIdx - bIdx);
@@ -230,7 +224,7 @@
           if (hasHeld) {
             datasets.push({
               label: 'Booked (Held)',
-              data: processed.map(r => Math.max(0, r.held)),
+              data: processed.map(r => r.held),
               borderColor: '#94a3b8',
               backgroundColor: '#94a3b820',
               borderDash: [5, 5],
@@ -247,8 +241,8 @@
               interaction: { intersect: false, mode: 'index' },
               plugins: { legend: { display: hasHeld } },
               scales: {
-                x: { ticks: { maxTicksLimit: 12, callback: function(v) { return this.getLabelForValue(v).substring(5); }}},
-                y: { beginAtZero: true, ticks: { callback: v => v.toLocaleString() }}
+                x: { ticks: { maxTicksLimit: 12, callback: function(v) { return this.getLabelForValue(v).substring(5); } } },
+                y: { beginAtZero: true, ticks: { callback: v => v.toLocaleString() } }
               }
             }
           };
@@ -269,58 +263,58 @@
           }
           config = {
             type: 'bar',
-            data: { labels: monthlyData.map(m => `${MONTHS[m.month]}`), datasets },
+            data: { labels: monthlyData.map(m => MONTHS[m.month]), datasets },
             options: {
               responsive: true, maintainAspectRatio: false,
               plugins: { legend: { display: hasHeld } },
-              scales: { y: { beginAtZero: true, stacked: true, ticks: { callback: v => v.toLocaleString() }}, x: { stacked: true }}
+              scales: { y: { beginAtZero: true, stacked: true, ticks: { callback: v => v.toLocaleString() } }, x: { stacked: true } }
             }
           };
         } else {
+          const byDow = [0,0,0,0,0,0,0];
+          processed.forEach(r => { byDow[r.dow] += r.total; });
           config = {
             type: 'bar',
             data: {
               labels: DAYS,
-              datasets: [{ label: 'Total', data: stats.byDow, backgroundColor: '#3b82f6', borderRadius: 6 }]
+              datasets: [{ label: 'Total', data: byDow, backgroundColor: '#3b82f6', borderRadius: 6 }]
             },
             options: {
               responsive: true, maintainAspectRatio: false,
-              plugins: { legend: { display: false }},
-              scales: { y: { beginAtZero: true, ticks: { callback: v => v.toLocaleString() }}}
+              plugins: { legend: { display: false } },
+              scales: { y: { beginAtZero: true, ticks: { callback: v => v.toLocaleString() } } }
             }
           };
         }
         chartInstance.current = new Chart(chartRef.current, config);
-      }, [processed, monthlyData, viewMode, hasHeld, stats]);
+      }, [processed, monthlyData, viewMode, hasHeld]);
 
       const formatDate = (dateStr) => {
         if (!dateStr) return '';
         const d = new Date(dateStr + 'T12:00:00');
-        return d.toLocaleDateString('en-US', {month: 'short', day: 'numeric', year: 'numeric'});
+        return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
       };
 
       return (
         <div>
           <h2>FY{fy} — {fy === '25' ? 'July 2024 – June 2025' : 'July 2025 – June 2026'}</h2>
-          
-          <div className="chart-container" style={{marginBottom:'20px', padding:'15px'}}>
-            <div style={{display:'flex', flexWrap:'wrap', gap:'15px', alignItems:'flex-end'}}>
-              <div className="filter-group" style={{display:'flex', flexDirection:'column'}}>
-                <label style={{fontSize:'0.85rem', fontWeight:'600', color:'#475569', marginBottom:'6px'}}>Start Date</label>
-                <input type="date" value={dateRange.start} onChange={e => setDateRange(p => ({...p, start: e.target.value}))} style={{padding:'10px', border:'1px solid #e2e8f0', borderRadius:'8px', fontSize:'0.95rem'}} />
-              </div>
-              <div className="filter-group" style={{display:'flex', flexDirection:'column'}}>
-                <label style={{fontSize:'0.85rem', fontWeight:'600', color:'#475569', marginBottom:'6px'}}>End Date</label>
-                <input type="date" value={dateRange.end} onChange={e => setDateRange(p => ({...p, end: e.target.value}))} style={{padding:'10px', border:'1px solid #e2e8f0', borderRadius:'8px', fontSize:'0.95rem'}} />
-              </div>
-              <button onClick={() => setDateRange({start:'', end:''})} style={{padding:'10px 16px', border:'1px solid #e2e8f0', background:'#fff', borderRadius:'8px', cursor:'pointer'}}>Reset</button>
+
+          <div className="filter-row">
+            <div className="filter-group">
+              <label>Start Date</label>
+              <input type="date" value={dateRange.start} onChange={e => setDateRange(p => ({ ...p, start: e.target.value }))} />
             </div>
+            <div className="filter-group">
+              <label>End Date</label>
+              <input type="date" value={dateRange.end} onChange={e => setDateRange(p => ({ ...p, end: e.target.value }))} />
+            </div>
+            <button className="reset-btn" onClick={() => setDateRange({ start: '', end: '' })}>Reset</button>
           </div>
-          
+
           {hasHeld && (
             <div className="legend">
-              <div className="legend-item"><div className="legend-dot" style={{background:'#3b82f6'}}></div> Actual Attendance</div>
-              <div className="legend-item"><div className="legend-dot" style={{background:'#94a3b8'}}></div> Booked (Future)</div>
+              <div className="legend-item"><div className="legend-dot" style={{ background: '#3b82f6' }}></div> Actual Attendance</div>
+              <div className="legend-item"><div className="legend-dot" style={{ background: '#94a3b8' }}></div> Booked (Future)</div>
             </div>
           )}
 
@@ -356,58 +350,15 @@
               <canvas ref={chartRef}></canvas>
             </div>
           </div>
-
-          <div className="chart-container">
-            <div className="chart-title">Monthly Breakdown</div>
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Month</th>
-                  <th>Actual</th>
-                  {hasHeld && <th>Booked</th>}
-                  <th>Days</th>
-                  <th>Avg/Day</th>
-                </tr>
-              </thead>
-              <tbody>
-                {monthlyData.map((m, i) => (
-                  <tr key={i}>
-                    <td>{MONTHS[m.month]} {m.fy + 1}</td>
-                    <td>{m.actual.toLocaleString()}</td>
-                    {hasHeld && <td>{m.held.toLocaleString()}</td>}
-                    <td>{m.days}</td>
-                    <td>{m.days ? Math.round((m.actual + m.held) / m.days).toLocaleString() : 0}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          <div className="chart-container">
-            <div className="chart-title">Day of Week Summary</div>
-            <table className="data-table">
-              <thead>
-                <tr><th>Day</th><th>Total</th><th># Days</th><th>Avg</th></tr>
-              </thead>
-              <tbody>
-                {DAYS.map((day, i) => (
-                  <tr key={i}>
-                    <td>{day}</td>
-                    <td>{stats.byDow[i].toLocaleString()}</td>
-                    <td>{stats.countByDow[i]}</td>
-                    <td>{stats.countByDow[i] ? Math.round(stats.byDow[i] / stats.countByDow[i]).toLocaleString() : 0}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
         </div>
       );
     }
 
     function CompareSection() {
-      const chartRef = useRef(null);
-      const chartInstance = useRef(null);
+      const monthlyChartRef = useRef(null);
+      const monthlyChartInstance = useRef(null);
+      const weeklyChartRef = useRef(null);
+      const weeklyChartInstance = useRef(null);
       const dailyChartRef = useRef(null);
       const dailyChartInstance = useRef(null);
 
@@ -435,7 +386,6 @@
         return FY_MONTHS.map((_, i) => byMonth[i] || 0);
       }, []);
 
-      // Daily data aligned by fiscal year day (0 = July 1)
       const fy25Daily = useMemo(() => {
         const byDay = {};
         FY25_RAW.forEach(r => {
@@ -458,6 +408,41 @@
         return byDay;
       }, []);
 
+      const fy25Weekly = useMemo(() => {
+        const weeks = [];
+        for (let w = 0; w < 52; w++) {
+          let sum = 0, count = 0;
+          for (let d = w * 7; d < (w + 1) * 7 && d < 366; d++) {
+            if (fy25Daily[d]) { sum += fy25Daily[d]; count++; }
+          }
+          weeks.push(count ? Math.round(sum / count) : 0);
+        }
+        return weeks;
+      }, [fy25Daily]);
+
+      const fy26Weekly = useMemo(() => {
+        const weeks = [];
+        for (let w = 0; w < 52; w++) {
+          let sum = 0, count = 0;
+          for (let d = w * 7; d < (w + 1) * 7 && d < 366; d++) {
+            if (fy26Daily[d]) { sum += fy26Daily[d]; count++; }
+          }
+          weeks.push(count ? Math.round(sum / count) : 0);
+        }
+        return weeks;
+      }, [fy26Daily]);
+
+      const weeklyLabels = useMemo(() => {
+        const labels = [];
+        const startDate = new Date(2024, 6, 1);
+        for (let w = 0; w < 52; w++) {
+          const d = new Date(startDate);
+          d.setDate(d.getDate() + w * 7);
+          labels.push(d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+        }
+        return labels;
+      }, []);
+
       const dailyLabels = useMemo(() => {
         const labels = [];
         const startDate = new Date(2024, 6, 1);
@@ -470,9 +455,9 @@
       }, []);
 
       useEffect(() => {
-        if (!chartRef.current) return;
-        if (chartInstance.current) chartInstance.current.destroy();
-        chartInstance.current = new Chart(chartRef.current, {
+        // Monthly chart
+        if (monthlyChartInstance.current) monthlyChartInstance.current.destroy();
+        monthlyChartInstance.current = new Chart(monthlyChartRef.current, {
           type: 'bar',
           data: {
             labels: FY_MONTHS,
@@ -483,15 +468,36 @@
           },
           options: {
             responsive: true, maintainAspectRatio: false,
-            plugins: { legend: { display: true }},
-            scales: { y: { beginAtZero: true, ticks: { callback: v => v.toLocaleString() }}}
+            plugins: { legend: { display: true } },
+            scales: { y: { beginAtZero: true, ticks: { callback: v => v.toLocaleString() } } }
           }
         });
 
-        // Daily comparison chart
+        // Weekly chart
+        if (weeklyChartInstance.current) weeklyChartInstance.current.destroy();
+        weeklyChartInstance.current = new Chart(weeklyChartRef.current, {
+          type: 'line',
+          data: {
+            labels: weeklyLabels,
+            datasets: [
+              { label: 'FY25 (Weekly Avg)', data: fy25Weekly, borderColor: '#3b82f6', fill: false, tension: 0.3, pointRadius: 3, borderWidth: 2 },
+              { label: 'FY26 (Weekly Avg)', data: fy26Weekly, borderColor: '#10b981', fill: false, tension: 0.3, pointRadius: 3, borderWidth: 2 }
+            ]
+          },
+          options: {
+            responsive: true, maintainAspectRatio: false,
+            interaction: { intersect: false, mode: 'index' },
+            plugins: { legend: { display: true } },
+            scales: {
+              x: { ticks: { maxTicksLimit: 12 } },
+              y: { beginAtZero: true, ticks: { callback: v => v.toLocaleString() } }
+            }
+          }
+        });
+
+        // Daily chart
         if (dailyChartInstance.current) dailyChartInstance.current.destroy();
-        const fy25Data = [];
-        const fy26Data = [];
+        const fy25Data = [], fy26Data = [];
         for (let i = 0; i < 366; i++) {
           fy25Data.push(fy25Daily[i] || 0);
           fy26Data.push(fy26Daily[i] || 0);
@@ -501,21 +507,21 @@
           data: {
             labels: dailyLabels,
             datasets: [
-              { label: 'FY25', data: fy25Data, borderColor: '#3b82f6', backgroundColor: '#3b82f620', fill: false, tension: 0.3, pointRadius: 0 },
-              { label: 'FY26 (Actual + Booked)', data: fy26Data, borderColor: '#10b981', backgroundColor: '#10b98120', fill: false, tension: 0.3, pointRadius: 0 }
+              { label: 'FY25', data: fy25Data, borderColor: '#3b82f6', fill: false, tension: 0.3, pointRadius: 0 },
+              { label: 'FY26 (Actual + Booked)', data: fy26Data, borderColor: '#10b981', fill: false, tension: 0.3, pointRadius: 0 }
             ]
           },
           options: {
             responsive: true, maintainAspectRatio: false,
             interaction: { intersect: false, mode: 'index' },
-            plugins: { legend: { display: true }},
-            scales: { 
-              x: { ticks: { maxTicksLimit: 12 }},
-              y: { beginAtZero: true, ticks: { callback: v => v.toLocaleString() }}
+            plugins: { legend: { display: true } },
+            scales: {
+              x: { ticks: { maxTicksLimit: 12 } },
+              y: { beginAtZero: true, ticks: { callback: v => v.toLocaleString() } }
             }
           }
         });
-      }, [fy25Monthly, fy26Monthly, fy25Daily, fy26Daily, dailyLabels]);
+      }, [fy25Monthly, fy26Monthly, fy25Weekly, fy26Weekly, fy25Daily, fy26Daily, weeklyLabels, dailyLabels]);
 
       const fy25Total = fy25Monthly.reduce((a, b) => a + b, 0);
       const fy26Total = fy26Monthly.reduce((a, b) => a + b, 0);
@@ -537,7 +543,7 @@
             </div>
             <div className="stat-card">
               <div className="label">Change</div>
-              <div className="value" style={{color: diff >= 0 ? '#10b981' : '#ef4444'}}>
+              <div className="value" style={{ color: diff >= 0 ? '#10b981' : '#ef4444' }}>
                 {diff >= 0 ? '+' : ''}{diff.toLocaleString()}
               </div>
               <div className="sub">{pctChange}%</div>
@@ -552,9 +558,16 @@
           </div>
 
           <div className="chart-container">
+            <div className="chart-title">Weekly Average Comparison (Aligned by Fiscal Year)</div>
+            <div className="chart-wrapper">
+              <canvas ref={weeklyChartRef}></canvas>
+            </div>
+          </div>
+
+          <div className="chart-container">
             <div className="chart-title">Monthly Comparison</div>
             <div className="chart-wrapper">
-              <canvas ref={chartRef}></canvas>
+              <canvas ref={monthlyChartRef}></canvas>
             </div>
           </div>
 
@@ -575,8 +588,8 @@
                       <td>{month}</td>
                       <td>{v25.toLocaleString()}</td>
                       <td>{v26.toLocaleString()}</td>
-                      <td style={{color: d >= 0 ? '#10b981' : '#ef4444'}}>{d >= 0 ? '+' : ''}{d.toLocaleString()}</td>
-                      <td style={{color: d >= 0 ? '#10b981' : '#ef4444'}}>{pct}%</td>
+                      <td style={{ color: d >= 0 ? '#10b981' : '#ef4444' }}>{d >= 0 ? '+' : ''}{d.toLocaleString()}</td>
+                      <td style={{ color: d >= 0 ? '#10b981' : '#ef4444' }}>{pct}%</td>
                     </tr>
                   );
                 })}
