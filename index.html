@@ -15,9 +15,10 @@
     h1 { font-size: 1.75rem; color: #1a1a2e; margin-bottom: 8px; }
     h2 { font-size: 1.35rem; color: #1a1a2e; margin: 30px 0 15px 0; padding-bottom: 8px; border-bottom: 2px solid #e2e8f0; }
     .subtitle { color: #64748b; margin-bottom: 20px; }
-    .legend { display: flex; gap: 20px; margin-bottom: 15px; font-size: 0.9rem; }
-    .legend-item { display: flex; align-items: center; gap: 6px; }
-    .legend-dot { width: 12px; height: 12px; border-radius: 3px; }
+    .location-header { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; }
+    .location-badge { padding: 6px 12px; border-radius: 8px; font-size: 0.9rem; font-weight: 600; }
+    .location-badge.science { background: #3b82f6; color: white; }
+    .location-badge.kids { background: #9333ea; color: white; }
     .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 15px; margin-bottom: 20px; }
     .stat-card { background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
     .stat-card .label { font-size: 0.85rem; color: #64748b; margin-bottom: 4px; }
@@ -25,7 +26,6 @@
     .stat-card .sub { font-size: 0.8rem; color: #94a3b8; margin-top: 2px; }
     .chart-container { background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 20px; }
     .chart-wrapper { position: relative; height: 450px; }
-    .chart-title { font-size: 1.1rem; font-weight: 600; margin-bottom: 15px; color: #1a1a2e; }
     .view-toggle { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
     .view-toggle button { padding: 8px 16px; border: 1px solid #e2e8f0; background: #fff; border-radius: 8px; cursor: pointer; font-size: 0.9rem; transition: all 0.2s; }
     .view-toggle button.active { background: #3b82f6; color: #fff; border-color: #3b82f6; }
@@ -34,6 +34,7 @@
     .filter-group label { font-size: 0.85rem; font-weight: 600; color: #475569; margin-bottom: 6px; }
     .filter-group input { padding: 10px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.95rem; }
     .reset-btn { padding: 10px 16px; border: 1px solid #e2e8f0; background: #fff; border-radius: 8px; cursor: pointer; }
+    .divider { height: 2px; background: linear-gradient(to right, #e2e8f0, transparent); margin: 40px 0; }
   </style>
 </head>
 <body>
@@ -41,7 +42,7 @@
   <script type="text/babel">
     const { useState, useEffect, useRef, useMemo } = React;
 
-    const ATTENDANCE_DATA = [
+    const SCIENCE_DATA = [
       ["2025-12-31",0],["2026-01-01",0],["2026-01-02",0],["2026-01-03",0],["2026-01-04",0],["2026-01-05",0],["2026-01-06",0],["2026-01-07",0],
       ["2026-01-08",0],["2026-01-09",0],["2026-01-10",0],["2026-01-11",0],["2026-01-12",0],["2026-01-13",0],["2026-01-14",0],["2026-01-15",0],
       ["2026-01-16",0],["2026-01-17",0],["2026-01-18",0],["2026-01-19",0],["2026-01-20",0],["2026-01-21",0],["2026-01-22",0],["2026-01-23",324],
@@ -67,23 +68,99 @@
       ["2026-06-25",0],["2026-06-26",0],["2026-06-27",0],["2026-06-28",0],["2026-06-29",0]
     ];
 
+    const KIDS_DATA = [
+      ["2025-12-31",0],["2026-01-01",0],["2026-01-02",0],["2026-01-03",0],["2026-01-04",0],["2026-01-05",0],["2026-01-06",0],["2026-01-07",0],
+      ["2026-01-08",0],["2026-01-09",0],["2026-01-10",0],["2026-01-11",0],["2026-01-12",0],["2026-01-13",0],["2026-01-14",0],["2026-01-15",0],
+      ["2026-01-16",0],["2026-01-17",0],["2026-01-18",0],["2026-01-19",0],["2026-01-20",0],["2026-01-21",0],["2026-01-22",0],["2026-01-23",102],
+      ["2026-01-24",0],["2026-01-25",0],["2026-01-26",0],["2026-01-27",31],["2026-01-28",0],["2026-01-29",72],["2026-01-30",129],["2026-01-31",0],
+      ["2026-02-01",0],["2026-02-02",0],["2026-02-03",84],["2026-02-04",45],["2026-02-05",0],["2026-02-06",124],["2026-02-07",0],["2026-02-08",0],
+      ["2026-02-09",0],["2026-02-10",0],["2026-02-11",51],["2026-02-12",76],["2026-02-13",218],["2026-02-14",0],["2026-02-15",0],["2026-02-16",0],
+      ["2026-02-17",0],["2026-02-18",0],["2026-02-19",28],["2026-02-20",102],["2026-02-21",0],["2026-02-22",0],["2026-02-23",0],["2026-02-24",0],
+      ["2026-02-25",90],["2026-02-26",136],["2026-02-27",248],["2026-02-28",0],["2026-03-01",0],["2026-03-02",0],["2026-03-03",24],["2026-03-04",0],
+      ["2026-03-05",0],["2026-03-06",180],["2026-03-07",0],["2026-03-08",0],["2026-03-09",0],["2026-03-10",26],["2026-03-11",106],["2026-03-12",46],
+      ["2026-03-13",125],["2026-03-14",0],["2026-03-15",0],["2026-03-16",0],["2026-03-17",48],["2026-03-18",48],["2026-03-19",90],["2026-03-20",48],
+      ["2026-03-21",0],["2026-03-22",0],["2026-03-23",0],["2026-03-24",48],["2026-03-25",72],["2026-03-26",120],["2026-03-27",429],["2026-03-28",0],
+      ["2026-03-29",0],["2026-03-30",0],["2026-03-31",44],["2026-04-01",120],["2026-04-02",138],["2026-04-03",101],["2026-04-04",0],["2026-04-05",0],
+      ["2026-04-06",0],["2026-04-07",0],["2026-04-08",0],["2026-04-09",36],["2026-04-10",0],["2026-04-11",0],["2026-04-12",0],["2026-04-13",0],
+      ["2026-04-14",0],["2026-04-15",25],["2026-04-16",164],["2026-04-17",151],["2026-04-18",0],["2026-04-19",0],["2026-04-20",0],["2026-04-21",0],
+      ["2026-04-22",0],["2026-04-23",0],["2026-04-24",0],["2026-04-25",0],["2026-04-26",0],["2026-04-27",0],["2026-04-28",77],["2026-04-29",0],
+      ["2026-04-30",0],["2026-05-01",156],["2026-05-02",0],["2026-05-03",0],["2026-05-04",0],["2026-05-05",0],["2026-05-06",0],["2026-05-07",0],
+      ["2026-05-08",0],["2026-05-09",0],["2026-05-10",0],["2026-05-11",0],["2026-05-12",65],["2026-05-13",48],["2026-05-14",93],["2026-05-15",0],
+      ["2026-05-16",0],["2026-05-17",0],["2026-05-18",0],["2026-05-19",29],["2026-05-20",0],["2026-05-21",198],["2026-05-22",217],["2026-05-23",0],
+      ["2026-05-24",0],["2026-05-25",0],["2026-05-26",0],["2026-05-27",0],["2026-05-28",0],["2026-05-29",44],["2026-05-30",0],["2026-05-31",0],
+      ["2026-06-01",0],["2026-06-02",0],["2026-06-03",0],["2026-06-04",0],["2026-06-05",0],["2026-06-06",0],["2026-06-07",0],["2026-06-08",0],
+      ["2026-06-09",0],["2026-06-10",0],["2026-06-11",0],["2026-06-12",0],["2026-06-13",0],["2026-06-14",0],["2026-06-15",0],["2026-06-16",0],
+      ["2026-06-17",0],["2026-06-18",0],["2026-06-19",0],["2026-06-20",0],["2026-06-21",0],["2026-06-22",0],["2026-06-23",0],["2026-06-24",0],
+      ["2026-06-25",0],["2026-06-26",0],["2026-06-27",0],["2026-06-28",0],["2026-06-29",0]
+    ];
+
     const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
     const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
     function App() {
-      const [viewMode, setViewMode] = useState('daily');
       const [dateRange, setDateRange] = useState({ start: '', end: '' });
+
+      return (
+        <div className="container">
+          <h1>📊 Field Trip Attendance Dashboard</h1>
+          <p className="subtitle">January – June 2026</p>
+
+          <div className="filter-row">
+            <div className="filter-group">
+              <label>Start Date</label>
+              <input
+                type="date"
+                value={dateRange.start}
+                onChange={e => setDateRange({ ...dateRange, start: e.target.value })}
+              />
+            </div>
+            <div className="filter-group">
+              <label>End Date</label>
+              <input
+                type="date"
+                value={dateRange.end}
+                onChange={e => setDateRange({ ...dateRange, end: e.target.value })}
+              />
+            </div>
+            <button className="reset-btn" onClick={() => setDateRange({ start: '', end: '' })}>
+              Reset
+            </button>
+          </div>
+
+          <LocationSection
+            name="Discovery Place Science"
+            data={SCIENCE_DATA}
+            color="#3b82f6"
+            badgeClass="science"
+            dateRange={dateRange}
+          />
+
+          <div className="divider"></div>
+
+          <LocationSection
+            name="Discovery Place Kids Huntersville"
+            data={KIDS_DATA}
+            color="#9333ea"
+            badgeClass="kids"
+            dateRange={dateRange}
+          />
+        </div>
+      );
+    }
+
+    function LocationSection({ name, data, color, badgeClass, dateRange }) {
+      const [viewMode, setViewMode] = useState('daily');
       const chartRef = useRef(null);
       const chartInstance = useRef(null);
 
       const allProcessed = useMemo(() => {
-        return ATTENDANCE_DATA.map(r => ({
+        return data.map(r => ({
           dateStr: r[0],
           attendance: r[1],
           date: new Date(r[0] + 'T12:00:00'),
           dow: new Date(r[0] + 'T12:00:00').getDay()
         }));
-      }, []);
+      }, [data]);
 
       const processed = useMemo(() => {
         return allProcessed.filter(row => {
@@ -131,8 +208,8 @@
               datasets: [{
                 label: 'Attendance',
                 data: processed.map(r => r.attendance),
-                borderColor: '#3b82f6',
-                backgroundColor: '#3b82f640',
+                borderColor: color,
+                backgroundColor: color + '40',
                 fill: true,
                 tension: 0.3,
                 pointRadius: 2
@@ -167,7 +244,7 @@
               datasets: [{
                 label: 'Total Attendance',
                 data: monthlyData.map(m => m.total),
-                backgroundColor: '#3b82f6',
+                backgroundColor: color,
                 borderRadius: 6
               }]
             },
@@ -193,7 +270,7 @@
               datasets: [{
                 label: 'Total',
                 data: byDow,
-                backgroundColor: '#3b82f6',
+                backgroundColor: color,
                 borderRadius: 6
               }]
             },
@@ -211,7 +288,7 @@
           };
         }
         chartInstance.current = new Chart(chartRef.current, config);
-      }, [processed, monthlyData, viewMode]);
+      }, [processed, monthlyData, viewMode, color]);
 
       const formatDate = (dateStr) => {
         if (!dateStr) return '';
@@ -220,30 +297,10 @@
       };
 
       return (
-        <div className="container">
-          <h1>📊 Field Trip Attendance Dashboard</h1>
-          <p className="subtitle">Discovery Place Science • January – June 2026</p>
-
-          <div className="filter-row">
-            <div className="filter-group">
-              <label>Start Date</label>
-              <input
-                type="date"
-                value={dateRange.start}
-                onChange={e => setDateRange(p => ({ ...p, start: e.target.value }))}
-              />
-            </div>
-            <div className="filter-group">
-              <label>End Date</label>
-              <input
-                type="date"
-                value={dateRange.end}
-                onChange={e => setDateRange(p => ({ ...p, end: e.target.value }))}
-              />
-            </div>
-            <button className="reset-btn" onClick={() => setDateRange({ start: '', end: '' })}>
-              Reset
-            </button>
+        <div>
+          <div className="location-header">
+            <h2>{name}</h2>
+            <span className={`location-badge ${badgeClass}`}>{name.split(' ').slice(-1)[0]}</span>
           </div>
 
           <div className="stats">
