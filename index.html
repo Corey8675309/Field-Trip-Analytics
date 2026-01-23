@@ -98,41 +98,16 @@
     const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
     function App() {
-      const [dateRange, setDateRange] = useState({ start: '', end: '' });
-
       return (
         <div className="container">
           <h1>📊 Field Trip Attendance Dashboard</h1>
           <p className="subtitle">January – June 2026</p>
-
-          <div className="filter-row">
-            <div className="filter-group">
-              <label>Start Date</label>
-              <input
-                type="date"
-                value={dateRange.start}
-                onChange={e => setDateRange({ ...dateRange, start: e.target.value })}
-              />
-            </div>
-            <div className="filter-group">
-              <label>End Date</label>
-              <input
-                type="date"
-                value={dateRange.end}
-                onChange={e => setDateRange({ ...dateRange, end: e.target.value })}
-              />
-            </div>
-            <button className="reset-btn" onClick={() => setDateRange({ start: '', end: '' })}>
-              Reset
-            </button>
-          </div>
 
           <LocationSection
             name="Discovery Place Science"
             data={SCIENCE_DATA}
             color="#3b82f6"
             badgeClass="science"
-            dateRange={dateRange}
           />
 
           <div className="divider"></div>
@@ -142,14 +117,14 @@
             data={KIDS_DATA}
             color="#9333ea"
             badgeClass="kids"
-            dateRange={dateRange}
           />
         </div>
       );
     }
 
-    function LocationSection({ name, data, color, badgeClass, dateRange }) {
+    function LocationSection({ name, data, color, badgeClass }) {
       const [viewMode, setViewMode] = useState('daily');
+      const [dateRange, setDateRange] = useState({ start: '', end: '' });
       const chartRef = useRef(null);
       const chartInstance = useRef(null);
 
@@ -301,6 +276,28 @@
           <div className="location-header">
             <h2>{name}</h2>
             <span className={`location-badge ${badgeClass}`}>{name.split(' ').slice(-1)[0]}</span>
+          </div>
+
+          <div className="filter-row">
+            <div className="filter-group">
+              <label>Start Date</label>
+              <input
+                type="date"
+                value={dateRange.start}
+                onChange={e => setDateRange({ ...dateRange, start: e.target.value })}
+              />
+            </div>
+            <div className="filter-group">
+              <label>End Date</label>
+              <input
+                type="date"
+                value={dateRange.end}
+                onChange={e => setDateRange({ ...dateRange, end: e.target.value })}
+              />
+            </div>
+            <button className="reset-btn" onClick={() => setDateRange({ start: '', end: '' })}>
+              Reset
+            </button>
           </div>
 
           <div className="stats">
