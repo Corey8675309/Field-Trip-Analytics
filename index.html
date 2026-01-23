@@ -29,14 +29,6 @@
     .view-toggle { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
     .view-toggle button { padding: 8px 16px; border: 1px solid #e2e8f0; background: #fff; border-radius: 8px; cursor: pointer; font-size: 0.9rem; transition: all 0.2s; }
     .view-toggle button.active { background: #3b82f6; color: #fff; border-color: #3b82f6; }
-    .data-table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.9rem; }
-    .data-table th, .data-table td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #e2e8f0; }
-    .data-table th { background: #f8fafc; font-weight: 600; color: #475569; position: sticky; top: 0; }
-    .data-table tr:hover { background: #f8fafc; }
-    .tabs { display: flex; gap: 5px; margin-bottom: 20px; border-bottom: 2px solid #e2e8f0; }
-    .tab { padding: 12px 24px; cursor: pointer; border: none; background: none; font-size: 1rem; color: #64748b; border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all 0.2s; }
-    .tab.active { color: #3b82f6; border-bottom-color: #3b82f6; font-weight: 600; }
-    .tab:hover { color: #3b82f6; }
     .filter-row { display: flex; flex-wrap: wrap; gap: 15px; align-items: flex-end; margin-bottom: 20px; background: #fff; padding: 15px 20px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
     .filter-group { display: flex; flex-direction: column; }
     .filter-group label { font-size: 0.85rem; font-weight: 600; color: #475569; margin-bottom: 6px; }
@@ -49,73 +41,49 @@
   <script type="text/babel">
     const { useState, useEffect, useRef, useMemo } = React;
 
- const FY26_RAW = [
-  ["2025-12-31",0],["2026-01-01",0],["2026-01-02",0],["2026-01-03",0],["2026-01-04",0],["2026-01-05",0],["2026-01-06",0],["2026-01-07",0],
-  ["2026-01-08",0],["2026-01-09",0],["2026-01-10",0],["2026-01-11",0],["2026-01-12",0],["2026-01-13",0],["2026-01-14",0],["2026-01-15",0],
-  ["2026-01-16",0],["2026-01-17",0],["2026-01-18",0],["2026-01-19",0],["2026-01-20",0],["2026-01-21",0],["2026-01-22",0],["2026-01-23",324],
-  ["2026-01-24",37],["2026-01-25",0],["2026-01-26",26],["2026-01-27",0],["2026-01-28",85],["2026-01-29",238],["2026-01-30",457],["2026-01-31",0],
-  ["2026-02-01",0],["2026-02-02",0],["2026-02-03",112],["2026-02-04",72],["2026-02-05",264],["2026-02-06",234],["2026-02-07",0],["2026-02-08",0],
-  ["2026-02-09",0],["2026-02-10",91],["2026-02-11",252],["2026-02-12",697],["2026-02-13",434],["2026-02-14",0],["2026-02-15",0],["2026-02-16",164],
-  ["2026-02-17",244],["2026-02-18",295],["2026-02-19",652],["2026-02-20",669],["2026-02-21",0],["2026-02-22",0],["2026-02-23",265],["2026-02-24",483],
-  ["2026-02-25",512],["2026-02-26",692],["2026-02-27",400],["2026-02-28",0],["2026-03-01",0],["2026-03-02",0],["2026-03-03",225],["2026-03-04",325],
-  ["2026-03-05",571],["2026-03-06",718],["2026-03-07",0],["2026-03-08",0],["2026-03-09",332],["2026-03-10",351],["2026-03-11",577],["2026-03-12",688],
-  ["2026-03-13",545],["2026-03-14",0],["2026-03-15",0],["2026-03-16",325],["2026-03-17",506],["2026-03-18",608],["2026-03-19",594],["2026-03-20",714],
-  ["2026-03-21",0],["2026-03-22",0],["2026-03-23",523],["2026-03-24",854],["2026-03-25",532],["2026-03-26",528],["2026-03-27",555],["2026-03-28",0],
-  ["2026-03-29",0],["2026-03-30",168],["2026-03-31",275],["2026-04-01",314],["2026-04-02",705],["2026-04-03",105],["2026-04-04",0],["2026-04-05",0],
-  ["2026-04-06",0],["2026-04-07",28],["2026-04-08",0],["2026-04-09",227],["2026-04-10",110],["2026-04-11",0],["2026-04-12",0],["2026-04-13",0],
-  ["2026-04-14",322],["2026-04-15",314],["2026-04-16",578],["2026-04-17",436],["2026-04-18",0],["2026-04-19",0],["2026-04-20",182],["2026-04-21",265],
-  ["2026-04-22",374],["2026-04-23",265],["2026-04-24",331],["2026-04-25",0],["2026-04-26",0],["2026-04-27",0],["2026-04-28",0],["2026-04-29",189],
-  ["2026-04-30",20],["2026-05-01",257],["2026-05-02",0],["2026-05-03",0],["2026-05-04",0],["2026-05-05",138],["2026-05-06",0],["2026-05-07",110],
-  ["2026-05-08",219],["2026-05-09",0],["2026-05-10",0],["2026-05-11",19],["2026-05-12",0],["2026-05-13",0],["2026-05-14",99],["2026-05-15",242],
-  ["2026-05-16",0],["2026-05-17",44],["2026-05-18",0],["2026-05-19",157],["2026-05-20",0],["2026-05-21",162],["2026-05-22",0],["2026-05-23",0],
-  ["2026-05-24",0],["2026-05-25",0],["2026-05-26",0],["2026-05-27",0],["2026-05-28",0],["2026-05-29",180],["2026-05-30",0],["2026-05-31",0],
-  ["2026-06-01",0],["2026-06-02",0],["2026-06-03",0],["2026-06-04",0],["2026-06-05",0],["2026-06-06",0],["2026-06-07",0],["2026-06-08",0],
-  ["2026-06-09",0],["2026-06-10",0],["2026-06-11",0],["2026-06-12",0],["2026-06-13",0],["2026-06-14",0],["2026-06-15",0],["2026-06-16",0],
-  ["2026-06-17",0],["2026-06-18",0],["2026-06-19",0],["2026-06-20",0],["2026-06-21",0],["2026-06-22",55],["2026-06-23",0],["2026-06-24",0],
-  ["2026-06-25",0],["2026-06-26",0],["2026-06-27",0],["2026-06-28",0],["2026-06-29",0]
+    const ATTENDANCE_DATA = [
+      ["2025-12-31",0],["2026-01-01",0],["2026-01-02",0],["2026-01-03",0],["2026-01-04",0],["2026-01-05",0],["2026-01-06",0],["2026-01-07",0],
+      ["2026-01-08",0],["2026-01-09",0],["2026-01-10",0],["2026-01-11",0],["2026-01-12",0],["2026-01-13",0],["2026-01-14",0],["2026-01-15",0],
+      ["2026-01-16",0],["2026-01-17",0],["2026-01-18",0],["2026-01-19",0],["2026-01-20",0],["2026-01-21",0],["2026-01-22",0],["2026-01-23",324],
+      ["2026-01-24",37],["2026-01-25",0],["2026-01-26",26],["2026-01-27",0],["2026-01-28",85],["2026-01-29",238],["2026-01-30",457],["2026-01-31",0],
+      ["2026-02-01",0],["2026-02-02",0],["2026-02-03",112],["2026-02-04",72],["2026-02-05",264],["2026-02-06",234],["2026-02-07",0],["2026-02-08",0],
+      ["2026-02-09",0],["2026-02-10",91],["2026-02-11",252],["2026-02-12",697],["2026-02-13",434],["2026-02-14",0],["2026-02-15",0],["2026-02-16",164],
+      ["2026-02-17",244],["2026-02-18",295],["2026-02-19",652],["2026-02-20",669],["2026-02-21",0],["2026-02-22",0],["2026-02-23",265],["2026-02-24",483],
+      ["2026-02-25",512],["2026-02-26",692],["2026-02-27",400],["2026-02-28",0],["2026-03-01",0],["2026-03-02",0],["2026-03-03",225],["2026-03-04",325],
+      ["2026-03-05",571],["2026-03-06",718],["2026-03-07",0],["2026-03-08",0],["2026-03-09",332],["2026-03-10",351],["2026-03-11",577],["2026-03-12",688],
+      ["2026-03-13",545],["2026-03-14",0],["2026-03-15",0],["2026-03-16",325],["2026-03-17",506],["2026-03-18",608],["2026-03-19",594],["2026-03-20",714],
+      ["2026-03-21",0],["2026-03-22",0],["2026-03-23",523],["2026-03-24",854],["2026-03-25",532],["2026-03-26",528],["2026-03-27",555],["2026-03-28",0],
+      ["2026-03-29",0],["2026-03-30",168],["2026-03-31",275],["2026-04-01",314],["2026-04-02",705],["2026-04-03",105],["2026-04-04",0],["2026-04-05",0],
+      ["2026-04-06",0],["2026-04-07",28],["2026-04-08",0],["2026-04-09",227],["2026-04-10",110],["2026-04-11",0],["2026-04-12",0],["2026-04-13",0],
+      ["2026-04-14",322],["2026-04-15",314],["2026-04-16",578],["2026-04-17",436],["2026-04-18",0],["2026-04-19",0],["2026-04-20",182],["2026-04-21",265],
+      ["2026-04-22",374],["2026-04-23",265],["2026-04-24",331],["2026-04-25",0],["2026-04-26",0],["2026-04-27",0],["2026-04-28",0],["2026-04-29",189],
+      ["2026-04-30",20],["2026-05-01",257],["2026-05-02",0],["2026-05-03",0],["2026-05-04",0],["2026-05-05",138],["2026-05-06",0],["2026-05-07",110],
+      ["2026-05-08",219],["2026-05-09",0],["2026-05-10",0],["2026-05-11",19],["2026-05-12",0],["2026-05-13",0],["2026-05-14",99],["2026-05-15",242],
+      ["2026-05-16",0],["2026-05-17",44],["2026-05-18",0],["2026-05-19",157],["2026-05-20",0],["2026-05-21",162],["2026-05-22",0],["2026-05-23",0],
+      ["2026-05-24",0],["2026-05-25",0],["2026-05-26",0],["2026-05-27",0],["2026-05-28",0],["2026-05-29",180],["2026-05-30",0],["2026-05-31",0],
+      ["2026-06-01",0],["2026-06-02",0],["2026-06-03",0],["2026-06-04",0],["2026-06-05",0],["2026-06-06",0],["2026-06-07",0],["2026-06-08",0],
+      ["2026-06-09",0],["2026-06-10",0],["2026-06-11",0],["2026-06-12",0],["2026-06-13",0],["2026-06-14",0],["2026-06-15",0],["2026-06-16",0],
+      ["2026-06-17",0],["2026-06-18",0],["2026-06-19",0],["2026-06-20",0],["2026-06-21",0],["2026-06-22",55],["2026-06-23",0],["2026-06-24",0],
+      ["2026-06-25",0],["2026-06-26",0],["2026-06-27",0],["2026-06-28",0],["2026-06-29",0]
     ];
 
     const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
     const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    const FY_MONTHS = ['Jul','Aug','Sep','Oct','Nov','Dec','Jan','Feb','Mar','Apr','May','Jun'];
 
     function App() {
-      const [activeTab, setActiveTab] = useState('fy25');
-
-      return (
-        <div className="container">
-          <h1>📊 Field Trip Attendance Dashboard</h1>
-          <p className="subtitle">Discovery Place Science</p>
-
-          <div className="tabs">
-            <button className={`tab ${activeTab === 'fy25' ? 'active' : ''}`} onClick={() => setActiveTab('fy25')}>FY25</button>
-            <button className={`tab ${activeTab === 'fy26' ? 'active' : ''}`} onClick={() => setActiveTab('fy26')}>FY26</button>
-            <button className={`tab ${activeTab === 'compare' ? 'active' : ''}`} onClick={() => setActiveTab('compare')}>Compare</button>
-          </div>
-
-          {activeTab === 'fy25' && <FYSection data={FY25_RAW} fy="25" hasHeld={false} />}
-          {activeTab === 'fy26' && <FYSection data={FY26_RAW} fy="26" hasHeld={true} />}
-          {activeTab === 'compare' && <CompareSection />}
-        </div>
-      );
-    }
-
-    function FYSection({ data, fy, hasHeld }) {
       const [viewMode, setViewMode] = useState('daily');
       const [dateRange, setDateRange] = useState({ start: '', end: '' });
       const chartRef = useRef(null);
       const chartInstance = useRef(null);
 
       const allProcessed = useMemo(() => {
-        return data.map(r => ({
+        return ATTENDANCE_DATA.map(r => ({
           dateStr: r[0],
-          actual: r[1],
-          held: hasHeld ? Math.max(0, r[2]) : 0,
-          total: hasHeld ? (r[1] + Math.max(0, r[2])) : r[1],
+          attendance: r[1],
           date: new Date(r[0] + 'T12:00:00'),
           dow: new Date(r[0] + 'T12:00:00').getDay()
         }));
-      }, [data, hasHeld]);
+      }, []);
 
       const processed = useMemo(() => {
         return allProcessed.filter(row => {
@@ -126,12 +94,12 @@
       }, [allProcessed, dateRange]);
 
       const stats = useMemo(() => {
-        const totalActual = processed.reduce((s, r) => s + r.actual, 0);
-        const totalHeld = processed.reduce((s, r) => s + r.held, 0);
-        const days = processed.filter(r => r.actual > 0 || r.held > 0).length;
-        const peak = Math.max(...processed.map(r => r.total));
-        const peakDay = processed.find(r => r.total === peak);
-        return { totalActual, totalHeld, days, peak, peakDate: peakDay?.dateStr };
+        const total = processed.reduce((s, r) => s + r.attendance, 0);
+        const days = processed.filter(r => r.attendance > 0).length;
+        const peak = Math.max(...processed.map(r => r.attendance));
+        const peakDay = processed.find(r => r.attendance === peak);
+        const avg = days > 0 ? Math.round(total / days) : 0;
+        return { total, days, peak, peakDate: peakDay?.dateStr, avg };
       }, [processed]);
 
       const monthlyData = useMemo(() => {
@@ -139,17 +107,14 @@
         processed.forEach(row => {
           const m = row.date.getMonth();
           const y = row.date.getFullYear();
-          const fyYear = m >= 6 ? y : y - 1;
-          const key = `${fyYear}-${String(m).padStart(2,'0')}`;
-          if (!byMonth[key]) byMonth[key] = { month: m, fy: fyYear, actual: 0, held: 0, days: 0 };
-          byMonth[key].actual += row.actual;
-          byMonth[key].held += row.held;
-          if (row.total > 0) byMonth[key].days++;
+          const key = `${y}-${String(m).padStart(2,'0')}`;
+          if (!byMonth[key]) byMonth[key] = { month: m, year: y, total: 0, days: 0 };
+          byMonth[key].total += row.attendance;
+          if (row.attendance > 0) byMonth[key].days++;
         });
         return Object.values(byMonth).sort((a, b) => {
-          const aIdx = a.month >= 6 ? a.month - 6 : a.month + 6;
-          const bIdx = b.month >= 6 ? b.month - 6 : b.month + 6;
-          return (a.fy - b.fy) || (aIdx - bIdx);
+          if (a.year !== b.year) return a.year - b.year;
+          return a.month - b.month;
         });
       }, [processed]);
 
@@ -159,82 +124,94 @@
 
         let config;
         if (viewMode === 'daily') {
-          const datasets = [{
-            label: 'Actual Attendance',
-            data: processed.map(r => r.actual),
-            borderColor: '#3b82f6',
-            backgroundColor: '#3b82f640',
-            fill: true,
-            tension: 0.3,
-            pointRadius: 2
-          }];
-          if (hasHeld) {
-            datasets.push({
-              label: 'Booked (Held)',
-              data: processed.map(r => r.held),
-              borderColor: '#94a3b8',
-              backgroundColor: '#94a3b820',
-              borderDash: [5, 5],
-              fill: true,
-              tension: 0.3,
-              pointRadius: 2
-            });
-          }
           config = {
             type: 'line',
-            data: { labels: processed.map(r => r.dateStr), datasets },
+            data: {
+              labels: processed.map(r => r.dateStr),
+              datasets: [{
+                label: 'Attendance',
+                data: processed.map(r => r.attendance),
+                borderColor: '#3b82f6',
+                backgroundColor: '#3b82f640',
+                fill: true,
+                tension: 0.3,
+                pointRadius: 2
+              }]
+            },
             options: {
-              responsive: true, maintainAspectRatio: false,
+              responsive: true,
+              maintainAspectRatio: false,
               interaction: { intersect: false, mode: 'index' },
-              plugins: { legend: { display: hasHeld } },
+              plugins: { legend: { display: false } },
               scales: {
-                x: { ticks: { maxTicksLimit: 12, callback: function(v) { return this.getLabelForValue(v).substring(5); } } },
-                y: { beginAtZero: true, ticks: { callback: v => v.toLocaleString() } }
+                x: {
+                  ticks: {
+                    maxTicksLimit: 12,
+                    callback: function(v) {
+                      return this.getLabelForValue(v).substring(5);
+                    }
+                  }
+                },
+                y: {
+                  beginAtZero: true,
+                  ticks: { callback: v => v.toLocaleString() }
+                }
               }
             }
           };
         } else if (viewMode === 'monthly') {
-          const datasets = [{
-            label: 'Actual',
-            data: monthlyData.map(m => m.actual),
-            backgroundColor: '#3b82f6',
-            borderRadius: 6
-          }];
-          if (hasHeld) {
-            datasets.push({
-              label: 'Booked',
-              data: monthlyData.map(m => m.held),
-              backgroundColor: '#94a3b8',
-              borderRadius: 6
-            });
-          }
           config = {
             type: 'bar',
-            data: { labels: monthlyData.map(m => MONTHS[m.month]), datasets },
+            data: {
+              labels: monthlyData.map(m => MONTHS[m.month] + ' ' + m.year),
+              datasets: [{
+                label: 'Total Attendance',
+                data: monthlyData.map(m => m.total),
+                backgroundColor: '#3b82f6',
+                borderRadius: 6
+              }]
+            },
             options: {
-              responsive: true, maintainAspectRatio: false,
-              plugins: { legend: { display: hasHeld } },
-              scales: { y: { beginAtZero: true, stacked: true, ticks: { callback: v => v.toLocaleString() } }, x: { stacked: true } }
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: { legend: { display: false } },
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  ticks: { callback: v => v.toLocaleString() }
+                }
+              }
             }
           };
         } else {
           const byDow = [0,0,0,0,0,0,0];
-          processed.forEach(r => { byDow[r.dow] += r.total; });
+          processed.forEach(r => { byDow[r.dow] += r.attendance; });
           config = {
             type: 'bar',
             data: {
               labels: DAYS,
-              datasets: [{ label: 'Total', data: byDow, backgroundColor: '#3b82f6', borderRadius: 6 }]
+              datasets: [{
+                label: 'Total',
+                data: byDow,
+                backgroundColor: '#3b82f6',
+                borderRadius: 6
+              }]
             },
             options: {
-              responsive: true, maintainAspectRatio: false,
+              responsive: true,
+              maintainAspectRatio: false,
               plugins: { legend: { display: false } },
-              scales: { y: { beginAtZero: true, ticks: { callback: v => v.toLocaleString() } } }
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  ticks: { callback: v => v.toLocaleString() }
+                }
+              }
             }
           };
         }
         chartInstance.current = new Chart(chartRef.current, config);
-      }, [processed, monthlyData, viewMode, hasHeld]);
+      }, [processed, monthlyData, viewMode]);
 
       const formatDate = (dateStr) => {
         if (!dateStr) return '';
@@ -243,39 +220,37 @@
       };
 
       return (
-        <div>
-          <h2>FY{fy} — {fy === '25' ? 'July 2024 – June 2025' : 'July 2025 – June 2026'}</h2>
+        <div className="container">
+          <h1>📊 Field Trip Attendance Dashboard</h1>
+          <p className="subtitle">Discovery Place Science • January – June 2026</p>
 
           <div className="filter-row">
             <div className="filter-group">
               <label>Start Date</label>
-              <input type="date" value={dateRange.start} onChange={e => setDateRange(p => ({ ...p, start: e.target.value }))} />
+              <input
+                type="date"
+                value={dateRange.start}
+                onChange={e => setDateRange(p => ({ ...p, start: e.target.value }))}
+              />
             </div>
             <div className="filter-group">
               <label>End Date</label>
-              <input type="date" value={dateRange.end} onChange={e => setDateRange(p => ({ ...p, end: e.target.value }))} />
+              <input
+                type="date"
+                value={dateRange.end}
+                onChange={e => setDateRange(p => ({ ...p, end: e.target.value }))}
+              />
             </div>
-            <button className="reset-btn" onClick={() => setDateRange({ start: '', end: '' })}>Reset</button>
+            <button className="reset-btn" onClick={() => setDateRange({ start: '', end: '' })}>
+              Reset
+            </button>
           </div>
-
-          {hasHeld && (
-            <div className="legend">
-              <div className="legend-item"><div className="legend-dot" style={{ background: '#3b82f6' }}></div> Actual Attendance</div>
-              <div className="legend-item"><div className="legend-dot" style={{ background: '#94a3b8' }}></div> Booked (Future)</div>
-            </div>
-          )}
 
           <div className="stats">
             <div className="stat-card">
-              <div className="label">{hasHeld ? 'Actual Visitors' : 'Total Visitors'}</div>
-              <div className="value">{stats.totalActual.toLocaleString()}</div>
+              <div className="label">Total Visitors</div>
+              <div className="value">{stats.total.toLocaleString()}</div>
             </div>
-            {hasHeld && (
-              <div className="stat-card">
-                <div className="label">Booked (Future)</div>
-                <div className="value">{stats.totalHeld.toLocaleString()}</div>
-              </div>
-            )}
             <div className="stat-card">
               <div className="label">Days with Trips</div>
               <div className="value">{stats.days}</div>
@@ -285,13 +260,33 @@
               <div className="value">{stats.peak.toLocaleString()}</div>
               <div className="sub">{formatDate(stats.peakDate)}</div>
             </div>
+            <div className="stat-card">
+              <div className="label">Average per Day</div>
+              <div className="value">{stats.avg.toLocaleString()}</div>
+              <div className="sub">with trips</div>
+            </div>
           </div>
 
           <div className="chart-container">
             <div className="view-toggle">
-              <button className={viewMode === 'daily' ? 'active' : ''} onClick={() => setViewMode('daily')}>Daily</button>
-              <button className={viewMode === 'monthly' ? 'active' : ''} onClick={() => setViewMode('monthly')}>Monthly</button>
-              <button className={viewMode === 'dow' ? 'active' : ''} onClick={() => setViewMode('dow')}>By Day of Week</button>
+              <button
+                className={viewMode === 'daily' ? 'active' : ''}
+                onClick={() => setViewMode('daily')}
+              >
+                Daily
+              </button>
+              <button
+                className={viewMode === 'monthly' ? 'active' : ''}
+                onClick={() => setViewMode('monthly')}
+              >
+                Monthly
+              </button>
+              <button
+                className={viewMode === 'dow' ? 'active' : ''}
+                onClick={() => setViewMode('dow')}
+              >
+                By Day of Week
+              </button>
             </div>
             <div className="chart-wrapper">
               <canvas ref={chartRef}></canvas>
@@ -301,292 +296,7 @@
       );
     }
 
-    function CompareSection() {
-      const [dateRange, setDateRange] = useState({ start: '', end: '' });
-      const monthlyChartRef = useRef(null);
-      const monthlyChartInstance = useRef(null);
-      const weeklyChartRef = useRef(null);
-      const weeklyChartInstance = useRef(null);
-      const dailyChartRef = useRef(null);
-      const dailyChartInstance = useRef(null);
-
-      // Convert date to fiscal year day number (0 = July 1)
-      const dateToFyDay = (dateStr) => {
-        const d = new Date(dateStr + 'T12:00:00');
-        const m = d.getMonth();
-        const day = d.getDate();
-        // Create equivalent date in FY24 (July 2024 - June 2025)
-        const fyYear = m >= 6 ? 2024 : 2025;
-        const equiv = new Date(fyYear, m, day);
-        const fyStart = new Date(2024, 6, 1);
-        return Math.floor((equiv - fyStart) / (1000 * 60 * 60 * 24));
-      };
-
-      // Get filtered day range
-      const startDay = dateRange.start ? dateToFyDay(dateRange.start) : 0;
-      const endDay = dateRange.end ? dateToFyDay(dateRange.end) : 365;
-
-      const fy25Monthly = useMemo(() => {
-        const byMonth = {};
-        FY25_RAW.forEach(r => {
-          const d = new Date(r[0] + 'T12:00:00');
-          const m = d.getMonth();
-          const idx = m >= 6 ? m - 6 : m + 6;
-          const fyStart = new Date(2024, 6, 1);
-          const dayNum = Math.floor((d - fyStart) / (1000 * 60 * 60 * 24));
-          if (dayNum < startDay || dayNum > endDay) return;
-          if (!byMonth[idx]) byMonth[idx] = 0;
-          byMonth[idx] += r[1];
-        });
-        return FY_MONTHS.map((_, i) => byMonth[i] || 0);
-      }, [startDay, endDay]);
-
-      const fy26Monthly = useMemo(() => {
-        const byMonth = {};
-        FY26_RAW.forEach(r => {
-          const d = new Date(r[0] + 'T12:00:00');
-          const m = d.getMonth();
-          const idx = m >= 6 ? m - 6 : m + 6;
-          const fyStart = new Date(2025, 6, 1);
-          const dayNum = Math.floor((d - fyStart) / (1000 * 60 * 60 * 24));
-          if (dayNum < startDay || dayNum > endDay) return;
-          if (!byMonth[idx]) byMonth[idx] = 0;
-          byMonth[idx] += r[1] + Math.max(0, r[2]);
-        });
-        return FY_MONTHS.map((_, i) => byMonth[i] || 0);
-      }, [startDay, endDay]);
-
-      const fy25Daily = useMemo(() => {
-        const byDay = {};
-        FY25_RAW.forEach(r => {
-          const d = new Date(r[0] + 'T12:00:00');
-          const fyStart = new Date(2024, 6, 1);
-          const dayNum = Math.floor((d - fyStart) / (1000 * 60 * 60 * 24));
-          if (dayNum < startDay || dayNum > endDay) return;
-          byDay[dayNum] = (byDay[dayNum] || 0) + r[1];
-        });
-        return byDay;
-      }, [startDay, endDay]);
-
-      const fy26Daily = useMemo(() => {
-        const byDay = {};
-        FY26_RAW.forEach(r => {
-          const d = new Date(r[0] + 'T12:00:00');
-          const fyStart = new Date(2025, 6, 1);
-          const dayNum = Math.floor((d - fyStart) / (1000 * 60 * 60 * 24));
-          if (dayNum < startDay || dayNum > endDay) return;
-          byDay[dayNum] = (byDay[dayNum] || 0) + r[1] + Math.max(0, r[2]);
-        });
-        return byDay;
-      }, [startDay, endDay]);
-
-      const fy25Weekly = useMemo(() => {
-        const weeks = [];
-        for (let w = 0; w < 52; w++) {
-          let sum = 0, count = 0;
-          for (let d = w * 7; d < (w + 1) * 7 && d < 366; d++) {
-            if (fy25Daily[d]) { sum += fy25Daily[d]; count++; }
-          }
-          weeks.push(count ? Math.round(sum / count) : 0);
-        }
-        return weeks;
-      }, [fy25Daily]);
-
-      const fy26Weekly = useMemo(() => {
-        const weeks = [];
-        for (let w = 0; w < 52; w++) {
-          let sum = 0, count = 0;
-          for (let d = w * 7; d < (w + 1) * 7 && d < 366; d++) {
-            if (fy26Daily[d]) { sum += fy26Daily[d]; count++; }
-          }
-          weeks.push(count ? Math.round(sum / count) : 0);
-        }
-        return weeks;
-      }, [fy26Daily]);
-
-      const weeklyLabels = useMemo(() => {
-        const labels = [];
-        const startDate = new Date(2024, 6, 1);
-        for (let w = 0; w < 52; w++) {
-          const dayNum = w * 7;
-          if (dayNum < startDay || dayNum > endDay) continue;
-          const d = new Date(startDate);
-          d.setDate(d.getDate() + dayNum);
-          labels.push({ label: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), week: w });
-        }
-        return labels;
-      }, [startDay, endDay]);
-
-      const dailyLabels = useMemo(() => {
-        const labels = [];
-        const startDate = new Date(2024, 6, 1);
-        for (let i = startDay; i <= endDay && i < 366; i++) {
-          const d = new Date(startDate);
-          d.setDate(d.getDate() + i);
-          labels.push({ label: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), day: i });
-        }
-        return labels;
-      }, [startDay, endDay]);
-
-      useEffect(() => {
-        // Monthly chart
-        if (monthlyChartInstance.current) monthlyChartInstance.current.destroy();
-        monthlyChartInstance.current = new Chart(monthlyChartRef.current, {
-          type: 'bar',
-          data: {
-            labels: FY_MONTHS,
-            datasets: [
-              { label: 'FY25', data: fy25Monthly, backgroundColor: '#3b82f6', borderRadius: 6 },
-              { label: 'FY26 (Actual + Booked)', data: fy26Monthly, backgroundColor: '#10b981', borderRadius: 6 }
-            ]
-          },
-          options: {
-            responsive: true, maintainAspectRatio: false,
-            plugins: { legend: { display: true } },
-            scales: { y: { beginAtZero: true, ticks: { callback: v => v.toLocaleString() } } }
-          }
-        });
-
-        // Weekly chart
-        if (weeklyChartInstance.current) weeklyChartInstance.current.destroy();
-        const fy25WeekData = weeklyLabels.map(w => fy25Weekly[w.week] || 0);
-        const fy26WeekData = weeklyLabels.map(w => fy26Weekly[w.week] || 0);
-        weeklyChartInstance.current = new Chart(weeklyChartRef.current, {
-          type: 'line',
-          data: {
-            labels: weeklyLabels.map(w => w.label),
-            datasets: [
-              { label: 'FY25 (Weekly Avg)', data: fy25WeekData, borderColor: '#3b82f6', fill: false, tension: 0.3, pointRadius: 3, borderWidth: 2 },
-              { label: 'FY26 (Weekly Avg)', data: fy26WeekData, borderColor: '#10b981', fill: false, tension: 0.3, pointRadius: 3, borderWidth: 2 }
-            ]
-          },
-          options: {
-            responsive: true, maintainAspectRatio: false,
-            interaction: { intersect: false, mode: 'index' },
-            plugins: { legend: { display: true } },
-            scales: {
-              x: { ticks: { maxTicksLimit: 12 } },
-              y: { beginAtZero: true, ticks: { callback: v => v.toLocaleString() } }
-            }
-          }
-        });
-
-        // Daily chart
-        if (dailyChartInstance.current) dailyChartInstance.current.destroy();
-        const fy25DayData = dailyLabels.map(d => fy25Daily[d.day] || 0);
-        const fy26DayData = dailyLabels.map(d => fy26Daily[d.day] || 0);
-        dailyChartInstance.current = new Chart(dailyChartRef.current, {
-          type: 'line',
-          data: {
-            labels: dailyLabels.map(d => d.label),
-            datasets: [
-              { label: 'FY25', data: fy25DayData, borderColor: '#3b82f6', fill: false, tension: 0.3, pointRadius: 0 },
-              { label: 'FY26 (Actual + Booked)', data: fy26DayData, borderColor: '#10b981', fill: false, tension: 0.3, pointRadius: 0 }
-            ]
-          },
-          options: {
-            responsive: true, maintainAspectRatio: false,
-            interaction: { intersect: false, mode: 'index' },
-            plugins: { legend: { display: true } },
-            scales: {
-              x: { ticks: { maxTicksLimit: 12 } },
-              y: { beginAtZero: true, ticks: { callback: v => v.toLocaleString() } }
-            }
-          }
-        });
-      }, [fy25Monthly, fy26Monthly, fy25Weekly, fy26Weekly, fy25Daily, fy26Daily, weeklyLabels, dailyLabels, startDay, endDay]);
-
-      const fy25Total = fy25Monthly.reduce((a, b) => a + b, 0);
-      const fy26Total = fy26Monthly.reduce((a, b) => a + b, 0);
-      const diff = fy26Total - fy25Total;
-      const pctChange = fy25Total ? ((diff / fy25Total) * 100).toFixed(1) : 0;
-
-      return (
-        <div>
-          <h2>Year-over-Year Comparison</h2>
-
-          <div className="filter-row">
-            <div className="filter-group">
-              <label>Start Date</label>
-              <input type="date" value={dateRange.start} onChange={e => setDateRange(p => ({ ...p, start: e.target.value }))} />
-            </div>
-            <div className="filter-group">
-              <label>End Date</label>
-              <input type="date" value={dateRange.end} onChange={e => setDateRange(p => ({ ...p, end: e.target.value }))} />
-            </div>
-            <button className="reset-btn" onClick={() => setDateRange({ start: '', end: '' })}>Reset</button>
-          </div>
-
-          <div className="stats">
-            <div className="stat-card">
-              <div className="label">FY25 Total</div>
-              <div className="value">{fy25Total.toLocaleString()}</div>
-            </div>
-            <div className="stat-card">
-              <div className="label">FY26 Total (Actual + Booked)</div>
-              <div className="value">{fy26Total.toLocaleString()}</div>
-            </div>
-            <div className="stat-card">
-              <div className="label">Change</div>
-              <div className="value" style={{ color: diff >= 0 ? '#10b981' : '#ef4444' }}>
-                {diff >= 0 ? '+' : ''}{diff.toLocaleString()}
-              </div>
-              <div className="sub">{pctChange}%</div>
-            </div>
-          </div>
-
-          <div className="chart-container">
-            <div className="chart-title">Daily Comparison (Aligned by Fiscal Year)</div>
-            <div className="chart-wrapper">
-              <canvas ref={dailyChartRef}></canvas>
-            </div>
-          </div>
-
-          <div className="chart-container">
-            <div className="chart-title">Weekly Average Comparison (Aligned by Fiscal Year)</div>
-            <div className="chart-wrapper">
-              <canvas ref={weeklyChartRef}></canvas>
-            </div>
-          </div>
-
-          <div className="chart-container">
-            <div className="chart-title">Monthly Comparison</div>
-            <div className="chart-wrapper">
-              <canvas ref={monthlyChartRef}></canvas>
-            </div>
-          </div>
-
-          <div className="chart-container">
-            <div className="chart-title">Month-by-Month Detail</div>
-            <table className="data-table">
-              <thead>
-                <tr><th>Month</th><th>FY25</th><th>FY26</th><th>Difference</th><th>% Change</th></tr>
-              </thead>
-              <tbody>
-                {FY_MONTHS.map((month, i) => {
-                  const v25 = fy25Monthly[i];
-                  const v26 = fy26Monthly[i];
-                  const d = v26 - v25;
-                  const pct = v25 ? ((d / v25) * 100).toFixed(1) : (v26 > 0 ? '∞' : '0');
-                  return (
-                    <tr key={i}>
-                      <td>{month}</td>
-                      <td>{v25.toLocaleString()}</td>
-                      <td>{v26.toLocaleString()}</td>
-                      <td style={{ color: d >= 0 ? '#10b981' : '#ef4444' }}>{d >= 0 ? '+' : ''}{d.toLocaleString()}</td>
-                      <td style={{ color: d >= 0 ? '#10b981' : '#ef4444' }}>{pct}%</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      );
-    }
-
     ReactDOM.createRoot(document.getElementById('root')).render(<App />);
   </script>
 </body>
 </html>
-
