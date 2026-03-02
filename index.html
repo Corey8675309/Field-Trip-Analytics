@@ -202,9 +202,18 @@ const DPKR_DATA = [
 
     function LocationSection({ name, data, color, badgeClass }) {
       const [viewMode, setViewMode] = useState('daily');
-      const [dateRange, setDateRange] = useState({ start: '', end: '' });
+      const [selectedMonths, setSelectedMonths] = useState([]);
       const chartRef = useRef(null);
       const chartInstance = useRef(null);
+
+      const availableMonths = [
+        { value: 0, label: 'January', year: 2026 },
+        { value: 1, label: 'February', year: 2026 },
+        { value: 2, label: 'March', year: 2026 },
+        { value: 3, label: 'April', year: 2026 },
+        { value: 4, label: 'May', year: 2026 },
+        { value: 5, label: 'June', year: 2026 }
+      ];
 
       const allProcessed = useMemo(() => {
         return data.map(r => ({
@@ -217,11 +226,25 @@ const DPKR_DATA = [
 
       const processed = useMemo(() => {
         return allProcessed.filter(row => {
-          if (dateRange.start && row.dateStr < dateRange.start) return false;
-          if (dateRange.end && row.dateStr > dateRange.end) return false;
+          // Apply month filter if any months are selected
+          if (selectedMonths.length > 0) {
+            const rowMonth = row.date.getMonth();
+            const rowYear = row.date.getFullYear();
+            
+            // Find min and max selected months
+            const selectedValues = selectedMonths.map(m => m.value).sort((a, b) => a - b);
+            const minMonth = selectedValues[0];
+            const maxMonth = selectedValues[selectedValues.length - 1];
+            
+            // Filter to show continuous range from min to max selected month
+            if (rowYear === 2026 && (rowMonth < minMonth || rowMonth > maxMonth)) {
+              return false;
+            }
+          }
+          
           return true;
         });
-      }, [allProcessed, dateRange]);
+      }, [allProcessed, selectedMonths]);
 
       const stats = useMemo(() => {
         const total = processed.reduce((s, r) => s + r.attendance, 0);
@@ -349,6 +372,40 @@ const DPKR_DATA = [
         return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
       };
 
+      const isMonthInRange = (monthValue) => {
+        if (selectedMonths.length === 0) return false;
+        const selectedValues = selectedMonths.map(m => m.value).sort((a, b) => a - b);
+        const minMonth = selectedValues[0];
+        const maxMonth = selectedValues[selectedValues.length - 1];
+        return monthValue >= minMonth && monthValue <= maxMonth;
+      };
+
+      const isMonthDirectlySelected = (monthValue) => {
+        return selectedMonths.some(m => m.value === monthValue);
+      };
+
+      const toggleMonth = (month) => {
+        setSelectedMonths(prev => {
+          const exists = prev.find(m => m.value === month.value);
+          if (exists) {
+            return prev.filter(m => m.value !== month.value);
+          } else {
+            return [...prev, month].sort((a, b) => a.value - b.value);
+          }
+        });
+      };
+
+      const getMonthRangeLabel = () => {
+        if (selectedMonths.length === 0) return '';
+        if (selectedMonths.length === 1) return selectedMonths[0].label;
+        const sorted = [...selectedMonths].sort((a, b) => a.value - b.value);
+        return `${sorted[0].label.substring(0, 3)} - ${sorted[sorted.length - 1].label.substring(0, 3)}`;
+      };
+
+      const clearFilters = () => {
+        setSelectedMonths([]);
+      };
+
       return (
         <div>
           <div className="location-header">
@@ -357,25 +414,40 @@ const DPKR_DATA = [
           </div>
 
           <div className="filter-row">
-            <div className="filter-group">
-              <label>Start Date</label>
-              <input
-                type="date"
-                value={dateRange.start}
-                onChange={e => setDateRange({ ...dateRange, start: e.target.value })}
-              />
+            <div className="filter-group" style={{ flex: 1 }}>
+              <label>Filter by Months {getMonthRangeLabel() && <span style={{ color: '#64748b', fontWeight: 'normal' }}>({getMonthRangeLabel()})</span>}</label>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                {availableMonths.map(month => {
+                  const inRange = isMonthInRange(month.value);
+                  const directlySelected = isMonthDirectlySelected(month.value);
+                  return (
+                    <button
+                      key={month.value}
+                      onClick={() => toggleMonth(month)}
+                      style={{
+                        padding: '8px 16px',
+                        border: inRange ? `2px solid ${color}` : '1px solid #e2e8f0',
+                        background: inRange ? (directlySelected ? color + '25' : color + '10') : '#fff',
+                        color: inRange ? color : '#475569',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        fontSize: '0.9rem',
+                        fontWeight: inRange ? '600' : '400',
+                        transition: 'all 0.2s',
+                        opacity: inRange && !directlySelected ? 0.7 : 1
+                      }}
+                    >
+                      {month.label}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-            <div className="filter-group">
-              <label>End Date</label>
-              <input
-                type="date"
-                value={dateRange.end}
-                onChange={e => setDateRange({ ...dateRange, end: e.target.value })}
-              />
-            </div>
-            <button className="reset-btn" onClick={() => setDateRange({ start: '', end: '' })}>
-              Reset
-            </button>
+            {selectedMonths.length > 0 && (
+              <button className="reset-btn" onClick={clearFilters}>
+                Clear
+              </button>
+            )}
           </div>
 
           <div className="stats">
