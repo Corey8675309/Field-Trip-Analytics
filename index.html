@@ -260,6 +260,10 @@ const DPKR_DATA = [
         processed.forEach(row => {
           const m = row.date.getMonth();
           const y = row.date.getFullYear();
+          
+          // Skip December 2025
+          if (y === 2025 && m === 11) return;
+          
           const key = `${y}-${String(m).padStart(2,'0')}`;
           if (!byMonth[key]) byMonth[key] = { month: m, year: y, total: 0, days: 0 };
           byMonth[key].total += row.attendance;
