@@ -177,6 +177,7 @@ const DPKR_DATA = [
             data={SCIENCE_DATA}
             color="#3b82f6"
             badgeClass="science"
+            yAxisMax={1000}
           />
 
           <div className="divider"></div>
@@ -186,6 +187,7 @@ const DPKR_DATA = [
             data={KIDS_DATA}
             color="#9c27b0"
             badgeClass="huntersville"
+            yAxisMax={500}
           />
 
           <div className="divider"></div>
@@ -195,12 +197,13 @@ const DPKR_DATA = [
             data={DPKR_DATA}
             color="#ff9800"
             badgeClass="rockingham"
+            yAxisMax={300}
           />
         </div>
       );
     }
 
-    function LocationSection({ name, data, color, badgeClass }) {
+    function LocationSection({ name, data, color, badgeClass, yAxisMax }) {
       const [viewMode, setViewMode] = useState('daily');
       const [selectedMonths, setSelectedMonths] = useState([]);
       const chartRef = useRef(null);
@@ -311,6 +314,7 @@ const DPKR_DATA = [
                 },
                 y: {
                   beginAtZero: true,
+                  max: yAxisMax,
                   ticks: { callback: v => v.toLocaleString() }
                 }
               }
@@ -335,6 +339,7 @@ const DPKR_DATA = [
               scales: {
                 y: {
                   beginAtZero: true,
+                  max: yAxisMax,
                   ticks: { callback: v => v.toLocaleString() }
                 }
               }
@@ -361,6 +366,7 @@ const DPKR_DATA = [
               scales: {
                 y: {
                   beginAtZero: true,
+                  max: yAxisMax,
                   ticks: { callback: v => v.toLocaleString() }
                 }
               }
