@@ -196,8 +196,8 @@ const DPKR_DATA = {
               pointRadius: 2
             });
             datasets.push({
-              label: 'Held',
-              data: processed.map(r => r.held),
+              label: 'Total',
+              data: processed.map(r => r.total),
               borderColor: '#6b7280',
               backgroundColor: '#6b728040',
               fill: false,
@@ -216,7 +216,18 @@ const DPKR_DATA = {
               responsive: true,
               maintainAspectRatio: false,
               interaction: { intersect: false, mode: 'index' },
-              plugins: { legend: { display: dataViewMode === 'breakdown', position: 'top' } },
+              plugins: { 
+                legend: { display: dataViewMode === 'breakdown', position: 'top' },
+                tooltip: {
+                  callbacks: dataViewMode === 'breakdown' ? {
+                    afterBody: function(context) {
+                      const index = context[0].dataIndex;
+                      const held = processed[index].held;
+                      return ['Held: ' + held.toLocaleString()];
+                    }
+                  } : {}
+                }
+              },
               scales: {
                 x: {
                   ticks: {
