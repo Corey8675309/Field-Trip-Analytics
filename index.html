@@ -179,35 +179,26 @@ const DPKR_DATA = {
             datasets.push({
               label: 'Total',
               data: processed.map(r => r.total),
-              borderColor: color,
-              backgroundColor: color + '40',
-              fill: false,
-              tension: 0.3,
-              pointRadius: 2
+              backgroundColor: color,
+              borderRadius: 4
             });
           } else {
             datasets.push({
               label: 'Purchased',
               data: processed.map(r => r.purchased),
-              borderColor: color,
-              backgroundColor: color + '40',
-              fill: false,
-              tension: 0.3,
-              pointRadius: 2
+              backgroundColor: color,
+              borderRadius: 4
             });
             datasets.push({
-              label: 'Total',
-              data: processed.map(r => r.total),
-              borderColor: '#6b7280',
-              backgroundColor: '#6b728040',
-              fill: false,
-              tension: 0.3,
-              pointRadius: 2
+              label: 'Held',
+              data: processed.map(r => r.held),
+              backgroundColor: '#6b7280',
+              borderRadius: 4
             });
           }
 
           config = {
-            type: 'line',
+            type: 'bar',
             data: {
               labels: processed.map(r => r.dateStr),
               datasets: datasets
@@ -220,16 +211,17 @@ const DPKR_DATA = {
                 legend: { display: dataViewMode === 'breakdown', position: 'top' },
                 tooltip: {
                   callbacks: dataViewMode === 'breakdown' ? {
-                    afterBody: function(context) {
+                    footer: function(context) {
                       const index = context[0].dataIndex;
-                      const held = processed[index].held;
-                      return ['Held: ' + held.toLocaleString()];
+                      const total = processed[index].total;
+                      return 'Total: ' + total.toLocaleString();
                     }
                   } : {}
                 }
               },
               scales: {
                 x: {
+                  stacked: dataViewMode === 'breakdown',
                   ticks: {
                     maxTicksLimit: 12,
                     callback: function(v) {
@@ -238,6 +230,7 @@ const DPKR_DATA = {
                   }
                 },
                 y: {
+                  stacked: dataViewMode === 'breakdown',
                   beginAtZero: true,
                   max: yAxisMax,
                   ticks: { callback: v => v.toLocaleString() }
