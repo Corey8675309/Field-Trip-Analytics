@@ -9,27 +9,162 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f7fa; color: #333; min-height: 100vh; }
-    .container { max-width: 1600px; margin: 0 auto; padding: 20px; }
-    h1 { font-size: 1.75rem; color: #1a1a2e; margin-bottom: 8px; }
-    h2 { font-size: 1.35rem; margin: 30px 0 15px 0; padding-bottom: 8px; border-bottom: 2px solid #e2e8f0; }
-    .subtitle { color: #64748b; margin-bottom: 20px; }
+    * { box-sizing: border-box; margin: 0; padding: 0; transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease; }
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+      background: linear-gradient(135deg, #f5f7fa 0%, #e8edf2 100%);
+      color: #333; 
+      min-height: 100vh; 
+    }
+    body.dark-mode {
+      background: linear-gradient(135deg, #1a1d2e 0%, #0f1419 100%);
+      color: #e2e8f0;
+    }
+    .container { max-width: 1600px; margin: 0 auto; padding: 20px; position: relative; }
+    .dark-mode-toggle {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      z-index: 1000;
+      opacity: 0.4;
+      transition: opacity 0.2s, transform 0.2s;
+      filter: grayscale(100%);
+    }
+    .dark-mode-toggle:hover {
+      opacity: 1;
+      transform: scale(1.15);
+      filter: grayscale(0%);
+    }
+    body.dark-mode .dark-mode-toggle {
+      opacity: 0.5;
+    }
+    body.dark-mode .dark-mode-toggle:hover {
+      opacity: 1;
+    }
+    h1 { font-size: 1.75rem; color: #1a1a2e; margin-bottom: 8px; font-weight: 700; }
+    body.dark-mode h1 { color: #f1f5f9; }
+    h2 { font-size: 1.35rem; margin: 30px 0 15px 0; padding-bottom: 8px; font-weight: 700; }
+    body.dark-mode h2 { color: #f1f5f9; }
+    .subtitle { color: #64748b; margin-bottom: 30px; font-size: 1rem; }
+    body.dark-mode .subtitle { color: #94a3b8; }
     .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 15px; margin-bottom: 20px; }
-    .stat-card { background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-    .stat-card .label { font-size: 0.85rem; color: #64748b; margin-bottom: 4px; }
+    .stat-card { 
+      background: #fff; 
+      padding: 20px; 
+      border-radius: 16px; 
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      transition: transform 0.2s, box-shadow 0.2s, background-color 0.3s;
+    }
+    body.dark-mode .stat-card {
+      background: #1e293b;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    }
+    .stat-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+    }
+    body.dark-mode .stat-card:hover {
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    }
+    .stat-card .label { font-size: 0.85rem; color: #64748b; margin-bottom: 4px; font-weight: 500; }
+    body.dark-mode .stat-card .label { color: #94a3b8; }
     .stat-card .value { font-size: 1.5rem; font-weight: 700; color: #1a1a2e; }
+    body.dark-mode .stat-card .value { color: #f1f5f9; }
     .stat-card .sub { font-size: 0.8rem; color: #94a3b8; margin-top: 2px; }
-    .chart-container { background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 20px; }
+    body.dark-mode .stat-card .sub { color: #64748b; }
+    .chart-container { 
+      background: #fff; 
+      padding: 20px; 
+      border-radius: 16px; 
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08); 
+      margin-bottom: 20px; 
+    }
+    body.dark-mode .chart-container {
+      background: #1e293b;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    }
     .chart-wrapper { position: relative; height: 450px; }
     .view-toggle { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
-    .view-toggle button { padding: 8px 16px; border: 1px solid #e2e8f0; background: #fff; border-radius: 8px; cursor: pointer; font-size: 0.9rem; transition: all 0.2s; }
-    .view-toggle button.active { background: #3b82f6; color: #fff; border-color: #3b82f6; }
-    .filter-row { display: flex; flex-wrap: wrap; gap: 15px; align-items: flex-end; margin-bottom: 20px; background: #fff; padding: 15px 20px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    .view-toggle button { 
+      padding: 10px 20px; 
+      border: 2px solid transparent;
+      background: #f1f5f9; 
+      border-radius: 12px; 
+      cursor: pointer; 
+      font-size: 0.9rem; 
+      transition: all 0.2s;
+      font-weight: 500;
+      color: #475569;
+    }
+    body.dark-mode .view-toggle button {
+      background: #0f172a;
+      color: #94a3b8;
+    }
+    .view-toggle button.active { 
+      background: #3b82f6; 
+      color: #fff; 
+      border-color: #3b82f6;
+      font-weight: 600;
+    }
+    .filter-row { 
+      display: flex; 
+      flex-wrap: wrap; 
+      gap: 15px; 
+      align-items: flex-end; 
+      margin-bottom: 20px; 
+      background: #fff; 
+      padding: 20px; 
+      border-radius: 16px; 
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08); 
+    }
+    body.dark-mode .filter-row {
+      background: #1e293b;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    }
     .filter-group { display: flex; flex-direction: column; }
-    .filter-group label { font-size: 0.85rem; font-weight: 600; color: #475569; margin-bottom: 6px; }
-    .reset-btn { padding: 10px 16px; border: 1px solid #e2e8f0; background: #fff; border-radius: 8px; cursor: pointer; }
+    .filter-group label { 
+      font-size: 0.85rem; 
+      font-weight: 600; 
+      color: #475569; 
+      margin-bottom: 8px; 
+    }
+    body.dark-mode .filter-group label {
+      color: #94a3b8;
+    }
+    .reset-btn { 
+      padding: 10px 20px; 
+      border: 2px solid #e2e8f0; 
+      background: #fff; 
+      border-radius: 12px; 
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+    body.dark-mode .reset-btn {
+      background: #0f172a;
+      border-color: #334155;
+      color: #94a3b8;
+    }
+    .reset-btn:hover {
+      background: #f8fafc;
+      border-color: #cbd5e1;
+    }
+    body.dark-mode .reset-btn:hover {
+      background: #1e293b;
+      border-color: #475569;
+    }
     .divider { height: 2px; background: linear-gradient(to right, #e2e8f0, transparent); margin: 40px 0; }
+    body.dark-mode .divider { background: linear-gradient(to right, #334155, transparent); }
   </style>
 </head>
 <body>
@@ -62,8 +197,30 @@ const DPKR_DATA = {
     const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
     function App() {
+      const [darkMode, setDarkMode] = useState(() => {
+        const saved = localStorage.getItem('darkMode');
+        return saved === 'true';
+      });
+
+      useEffect(() => {
+        if (darkMode) {
+          document.body.classList.add('dark-mode');
+        } else {
+          document.body.classList.remove('dark-mode');
+        }
+        localStorage.setItem('darkMode', darkMode);
+      }, [darkMode]);
+
       return (
         <div className="container">
+          <button 
+            className="dark-mode-toggle"
+            onClick={() => setDarkMode(!darkMode)}
+            aria-label="Toggle dark mode"
+          >
+            {darkMode ? '☀️' : '🌙'}
+          </button>
+          
           <h1>📊 Field Trip Attendance Dashboard</h1>
           <p className="subtitle">January – July 2026</p>
 
@@ -456,16 +613,17 @@ const DPKR_DATA = {
                       key={month.value}
                       onClick={() => toggleMonth(month)}
                       style={{
-                        padding: '8px 16px',
-                        border: inRange ? `2px solid ${color}` : '1px solid #e2e8f0',
-                        background: inRange ? (directlySelected ? color + '25' : color + '10') : '#fff',
-                        color: inRange ? color : '#475569',
-                        borderRadius: '8px',
+                        padding: '12px 24px',
+                        border: '2px solid transparent',
+                        background: inRange ? color : '#f1f5f9',
+                        color: inRange ? '#fff' : '#475569',
+                        borderRadius: '16px',
                         cursor: 'pointer',
-                        fontSize: '0.9rem',
-                        fontWeight: inRange ? '600' : '400',
+                        fontSize: '0.95rem',
+                        fontWeight: '600',
                         transition: 'all 0.2s',
-                        opacity: inRange && !directlySelected ? 0.7 : 1
+                        opacity: inRange && !directlySelected ? 0.85 : 1,
+                        boxShadow: inRange ? '0 2px 4px rgba(0,0,0,0.1)' : 'none'
                       }}
                     >
                       {month.label}
@@ -485,15 +643,16 @@ const DPKR_DATA = {
                           key={week.weekNum}
                           onClick={() => setSelectedWeek(isSelected ? null : week)}
                           style={{
-                            padding: '6px 12px',
-                            border: isSelected ? `2px solid ${color}` : '1px solid #e2e8f0',
-                            background: isSelected ? color + '25' : '#fff',
-                            color: isSelected ? color : '#475569',
-                            borderRadius: '8px',
+                            padding: '10px 20px',
+                            border: '2px solid transparent',
+                            background: isSelected ? color : '#f1f5f9',
+                            color: isSelected ? '#fff' : '#475569',
+                            borderRadius: '14px',
                             cursor: 'pointer',
-                            fontSize: '0.85rem',
-                            fontWeight: isSelected ? '600' : '400',
-                            transition: 'all 0.2s'
+                            fontSize: '0.9rem',
+                            fontWeight: '600',
+                            transition: 'all 0.2s',
+                            boxShadow: isSelected ? '0 2px 4px rgba(0,0,0,0.1)' : 'none'
                           }}
                         >
                           {week.label}
@@ -537,15 +696,16 @@ const DPKR_DATA = {
               <button
                 onClick={() => setDataViewMode('total')}
                 style={{
-                  padding: '8px 16px',
-                  border: dataViewMode === 'total' ? `2px solid ${color}` : '1px solid #e2e8f0',
-                  background: dataViewMode === 'total' ? color + '15' : '#fff',
-                  color: dataViewMode === 'total' ? color : '#475569',
-                  borderRadius: '8px',
+                  padding: '10px 20px',
+                  border: '2px solid transparent',
+                  background: dataViewMode === 'total' ? color : '#f1f5f9',
+                  color: dataViewMode === 'total' ? '#fff' : '#475569',
+                  borderRadius: '14px',
                   cursor: 'pointer',
-                  fontSize: '0.9rem',
-                  fontWeight: dataViewMode === 'total' ? '600' : '400',
-                  transition: 'all 0.2s'
+                  fontSize: '0.95rem',
+                  fontWeight: '600',
+                  transition: 'all 0.2s',
+                  boxShadow: dataViewMode === 'total' ? '0 2px 4px rgba(0,0,0,0.1)' : 'none'
                 }}
               >
                 Total
@@ -553,15 +713,16 @@ const DPKR_DATA = {
               <button
                 onClick={() => setDataViewMode('breakdown')}
                 style={{
-                  padding: '8px 16px',
-                  border: dataViewMode === 'breakdown' ? `2px solid ${color}` : '1px solid #e2e8f0',
-                  background: dataViewMode === 'breakdown' ? color + '15' : '#fff',
-                  color: dataViewMode === 'breakdown' ? color : '#475569',
-                  borderRadius: '8px',
+                  padding: '10px 20px',
+                  border: '2px solid transparent',
+                  background: dataViewMode === 'breakdown' ? color : '#f1f5f9',
+                  color: dataViewMode === 'breakdown' ? '#fff' : '#475569',
+                  borderRadius: '14px',
                   cursor: 'pointer',
-                  fontSize: '0.9rem',
-                  fontWeight: dataViewMode === 'breakdown' ? '600' : '400',
-                  transition: 'all 0.2s'
+                  fontSize: '0.95rem',
+                  fontWeight: '600',
+                  transition: 'all 0.2s',
+                  boxShadow: dataViewMode === 'breakdown' ? '0 2px 4px rgba(0,0,0,0.1)' : 'none'
                 }}
               >
                 Show Purchased/Held
@@ -571,18 +732,33 @@ const DPKR_DATA = {
               <button
                 className={chartViewMode === 'daily' ? 'active' : ''}
                 onClick={() => setChartViewMode('daily')}
+                style={{
+                  background: chartViewMode === 'daily' ? color : '#f1f5f9',
+                  color: chartViewMode === 'daily' ? '#fff' : '#475569',
+                  borderColor: 'transparent'
+                }}
               >
                 Daily
               </button>
               <button
                 className={chartViewMode === 'monthly' ? 'active' : ''}
                 onClick={() => setChartViewMode('monthly')}
+                style={{
+                  background: chartViewMode === 'monthly' ? color : '#f1f5f9',
+                  color: chartViewMode === 'monthly' ? '#fff' : '#475569',
+                  borderColor: 'transparent'
+                }}
               >
                 Monthly
               </button>
               <button
                 className={chartViewMode === 'dow' ? 'active' : ''}
                 onClick={() => setChartViewMode('dow')}
+                style={{
+                  background: chartViewMode === 'dow' ? color : '#f1f5f9',
+                  color: chartViewMode === 'dow' ? '#fff' : '#475569',
+                  borderColor: 'transparent'
+                }}
               >
                 By Day of Week
               </button>
