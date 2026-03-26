@@ -17,7 +17,7 @@
       min-height: 100vh; 
     }
     body.dark-mode {
-      background: linear-gradient(135deg, #1a1d2e 0%, #0f1419 100%);
+      background: linear-gradient(135deg, #18181b 0%, #0a0a0b 100%);
       color: #e2e8f0;
     }
     .container { max-width: 1600px; margin: 0 auto; padding: 20px; position: relative; }
@@ -66,7 +66,7 @@
       transition: transform 0.2s, box-shadow 0.2s, background-color 0.3s;
     }
     body.dark-mode .stat-card {
-      background: #1e293b;
+      background: #27272a;
       box-shadow: 0 2px 8px rgba(0,0,0,0.3);
     }
     .stat-card:hover {
@@ -90,7 +90,7 @@
       margin-bottom: 20px; 
     }
     body.dark-mode .chart-container {
-      background: #1e293b;
+      background: #27272a;
       box-shadow: 0 2px 8px rgba(0,0,0,0.3);
     }
     .chart-wrapper { position: relative; height: 450px; }
@@ -107,7 +107,7 @@
       color: #475569;
     }
     body.dark-mode .view-toggle button {
-      background: #0f172a;
+      background: #18181b;
       color: #94a3b8;
     }
     .view-toggle button.active { 
@@ -136,7 +136,7 @@
       box-shadow: 0 2px 8px rgba(0,0,0,0.08); 
     }
     body.dark-mode .filter-row {
-      background: #1e293b;
+      background: #27272a;
       box-shadow: 0 2px 8px rgba(0,0,0,0.3);
     }
     .filter-group { display: flex; flex-direction: column; }
@@ -159,8 +159,8 @@
       transition: all 0.2s;
     }
     body.dark-mode .reset-btn {
-      background: #0f172a;
-      border-color: #334155;
+      background: #18181b;
+      border-color: #3f3f46;
       color: #94a3b8;
     }
     .reset-btn:hover {
@@ -168,11 +168,11 @@
       border-color: #cbd5e1;
     }
     body.dark-mode .reset-btn:hover {
-      background: #1e293b;
-      border-color: #475569;
+      background: #27272a;
+      border-color: #52525b;
     }
     .divider { height: 2px; background: linear-gradient(to right, #e2e8f0, transparent); margin: 40px 0; }
-    body.dark-mode .divider { background: linear-gradient(to right, #334155, transparent); }
+    body.dark-mode .divider { background: linear-gradient(to right, #3f3f46, transparent); }
   </style>
 </head>
 <body>
@@ -275,7 +275,7 @@ const DPKR_DATA = {
       const chartInstance = useRef(null);
 
       const activeColor = darkMode ? darkColor : color;
-      const inactiveBg = darkMode ? '#0f172a' : '#f1f5f9';
+      const inactiveBg = darkMode ? '#18181b' : '#f1f5f9';
       const inactiveText = darkMode ? '#94a3b8' : '#475569';
 
       const availableMonths = [
