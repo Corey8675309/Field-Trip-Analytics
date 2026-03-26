@@ -116,6 +116,14 @@
       border-color: #3b82f6;
       font-weight: 600;
     }
+    .month-btn-inactive {
+      background: #f1f5f9 !important;
+      color: #475569 !important;
+    }
+    body.dark-mode .month-btn-inactive {
+      background: #0f172a !important;
+      color: #94a3b8 !important;
+    }
     .filter-row { 
       display: flex; 
       flex-wrap: wrap; 
@@ -228,7 +236,9 @@ const DPKR_DATA = {
             name="Discovery Place Science"
             data={SCIENCE_DATA}
             color="#3b82f6"
+            darkColor="#2563eb"
             yAxisMax={1000}
+            darkMode={darkMode}
           />
 
           <div className="divider"></div>
@@ -237,7 +247,9 @@ const DPKR_DATA = {
             name="Discovery Place Kids Huntersville"
             data={KIDS_DATA}
             color="#9c27b0"
+            darkColor="#7b1fa2"
             yAxisMax={500}
+            darkMode={darkMode}
           />
 
           <div className="divider"></div>
@@ -246,19 +258,25 @@ const DPKR_DATA = {
             name="Discovery Place Kids Rockingham"
             data={DPKR_DATA}
             color="#ff9800"
+            darkColor="#f57c00"
             yAxisMax={300}
+            darkMode={darkMode}
           />
         </div>
       );
     }
 
-    function LocationSection({ name, data, color, yAxisMax }) {
+    function LocationSection({ name, data, color, darkColor, yAxisMax, darkMode }) {
       const [chartViewMode, setChartViewMode] = useState('daily');
       const [dataViewMode, setDataViewMode] = useState('total'); // 'total' or 'breakdown'
       const [selectedMonths, setSelectedMonths] = useState([]);
       const [selectedWeek, setSelectedWeek] = useState(null);
       const chartRef = useRef(null);
       const chartInstance = useRef(null);
+
+      const activeColor = darkMode ? darkColor : color;
+      const inactiveBg = darkMode ? '#0f172a' : '#f1f5f9';
+      const inactiveText = darkMode ? '#94a3b8' : '#475569';
 
       const availableMonths = [
         { value: 0, label: 'January', year: 2026 },
@@ -345,14 +363,14 @@ const DPKR_DATA = {
             datasets.push({
               label: 'Total',
               data: processed.map(r => r.total),
-              backgroundColor: color,
+              backgroundColor: activeColor,
               borderRadius: 4
             });
           } else {
             datasets.push({
               label: 'Purchased',
               data: processed.map(r => r.purchased),
-              backgroundColor: color,
+              backgroundColor: activeColor,
               borderRadius: 4
             });
             datasets.push({
@@ -411,14 +429,14 @@ const DPKR_DATA = {
             datasets.push({
               label: 'Total',
               data: monthlyData.map(m => m.total),
-              backgroundColor: color,
+              backgroundColor: activeColor,
               borderRadius: 6
             });
           } else {
             datasets.push({
               label: 'Purchased',
               data: monthlyData.map(m => m.purchased),
-              backgroundColor: color,
+              backgroundColor: activeColor,
               borderRadius: 6
             });
             datasets.push({
@@ -463,14 +481,14 @@ const DPKR_DATA = {
             datasets.push({
               label: 'Total',
               data: byDow,
-              backgroundColor: color,
+              backgroundColor: activeColor,
               borderRadius: 6
             });
           } else {
             datasets.push({
               label: 'Purchased',
               data: byDowPurchased,
-              backgroundColor: color,
+              backgroundColor: activeColor,
               borderRadius: 6
             });
             datasets.push({
@@ -598,7 +616,7 @@ const DPKR_DATA = {
       return (
         <div>
           <div>
-            <h2 style={{ color: color }}>{name}</h2>
+            <h2 style={{ color: activeColor }}>{name}</h2>
           </div>
 
           <div className="filter-row">
@@ -615,8 +633,8 @@ const DPKR_DATA = {
                       style={{
                         padding: '12px 24px',
                         border: '2px solid transparent',
-                        background: inRange ? color : '#f1f5f9',
-                        color: inRange ? '#fff' : '#475569',
+                        background: inRange ? activeColor : inactiveBg,
+                        color: inRange ? '#fff' : inactiveText,
                         borderRadius: '16px',
                         cursor: 'pointer',
                         fontSize: '0.95rem',
@@ -645,8 +663,8 @@ const DPKR_DATA = {
                           style={{
                             padding: '10px 20px',
                             border: '2px solid transparent',
-                            background: isSelected ? color : '#f1f5f9',
-                            color: isSelected ? '#fff' : '#475569',
+                            background: isSelected ? activeColor : inactiveBg,
+                            color: isSelected ? '#fff' : inactiveText,
                             borderRadius: '14px',
                             cursor: 'pointer',
                             fontSize: '0.9rem',
@@ -698,8 +716,8 @@ const DPKR_DATA = {
                 style={{
                   padding: '10px 20px',
                   border: '2px solid transparent',
-                  background: dataViewMode === 'total' ? color : '#f1f5f9',
-                  color: dataViewMode === 'total' ? '#fff' : '#475569',
+                  background: dataViewMode === 'total' ? activeColor : inactiveBg,
+                  color: dataViewMode === 'total' ? '#fff' : inactiveText,
                   borderRadius: '14px',
                   cursor: 'pointer',
                   fontSize: '0.95rem',
@@ -715,8 +733,8 @@ const DPKR_DATA = {
                 style={{
                   padding: '10px 20px',
                   border: '2px solid transparent',
-                  background: dataViewMode === 'breakdown' ? color : '#f1f5f9',
-                  color: dataViewMode === 'breakdown' ? '#fff' : '#475569',
+                  background: dataViewMode === 'breakdown' ? activeColor : inactiveBg,
+                  color: dataViewMode === 'breakdown' ? '#fff' : inactiveText,
                   borderRadius: '14px',
                   cursor: 'pointer',
                   fontSize: '0.95rem',
@@ -733,8 +751,8 @@ const DPKR_DATA = {
                 className={chartViewMode === 'daily' ? 'active' : ''}
                 onClick={() => setChartViewMode('daily')}
                 style={{
-                  background: chartViewMode === 'daily' ? color : '#f1f5f9',
-                  color: chartViewMode === 'daily' ? '#fff' : '#475569',
+                  background: chartViewMode === 'daily' ? activeColor : inactiveBg,
+                  color: chartViewMode === 'daily' ? '#fff' : inactiveText,
                   borderColor: 'transparent'
                 }}
               >
@@ -744,8 +762,8 @@ const DPKR_DATA = {
                 className={chartViewMode === 'monthly' ? 'active' : ''}
                 onClick={() => setChartViewMode('monthly')}
                 style={{
-                  background: chartViewMode === 'monthly' ? color : '#f1f5f9',
-                  color: chartViewMode === 'monthly' ? '#fff' : '#475569',
+                  background: chartViewMode === 'monthly' ? activeColor : inactiveBg,
+                  color: chartViewMode === 'monthly' ? '#fff' : inactiveText,
                   borderColor: 'transparent'
                 }}
               >
@@ -755,8 +773,8 @@ const DPKR_DATA = {
                 className={chartViewMode === 'dow' ? 'active' : ''}
                 onClick={() => setChartViewMode('dow')}
                 style={{
-                  background: chartViewMode === 'dow' ? color : '#f1f5f9',
-                  color: chartViewMode === 'dow' ? '#fff' : '#475569',
+                  background: chartViewMode === 'dow' ? activeColor : inactiveBg,
+                  color: chartViewMode === 'dow' ? '#fff' : inactiveText,
                   borderColor: 'transparent'
                 }}
               >
