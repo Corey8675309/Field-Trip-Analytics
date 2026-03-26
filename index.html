@@ -94,6 +94,27 @@
       box-shadow: 0 2px 8px rgba(0,0,0,0.3);
     }
     .chart-wrapper { position: relative; height: 450px; }
+    .click-indicator {
+      position: absolute;
+      font-size: 20px;
+      pointer-events: none;
+      animation: bounceAndFade 3s ease-out forwards;
+      z-index: 10;
+      transform: translateX(-50%);
+    }
+    @keyframes bounceAndFade {
+      0%, 10%, 20%, 30% { 
+        opacity: 1; 
+        transform: translateX(-50%) translateY(0); 
+      }
+      5%, 15%, 25% { 
+        transform: translateX(-50%) translateY(-8px); 
+      }
+      100% { 
+        opacity: 0; 
+        transform: translateX(-50%) translateY(0); 
+      }
+    }
     .view-toggle { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
     .view-toggle button { 
       padding: 10px 20px; 
@@ -271,6 +292,7 @@ const DPKR_DATA = {
       const [dataViewMode, setDataViewMode] = useState('total'); // 'total' or 'breakdown'
       const [selectedMonths, setSelectedMonths] = useState([]);
       const [selectedWeek, setSelectedWeek] = useState(null);
+      const [clickIndicator, setClickIndicator] = useState(null);
       const chartRef = useRef(null);
       const chartInstance = useRef(null);
 
@@ -391,6 +413,64 @@ const DPKR_DATA = {
               responsive: true,
               maintainAspectRatio: false,
               interaction: { intersect: false, mode: 'index' },
+              onClick: (event, elements) => {
+                if (elements.length > 0) {
+                  const index = elements[0].index;
+                  const clickedDate = new Date(processed[index].dateStr + 'T12:00:00');
+                  const clickedMonth = clickedDate.getMonth();
+                  const clickedYear = clickedDate.getFullYear();
+                  const clickedDateStr = processed[index].dateStr;
+                  
+                  // If no month selected, select the clicked month
+                  if (selectedMonths.length === 0) {
+                    const month = availableMonths.find(m => m.value === clickedMonth && m.year === clickedYear);
+                    if (month) {
+                      setSelectedMonths([month]);
+                      // Show indicator after chart updates and animates
+                      setTimeout(() => {
+                        const chart = chartInstance.current;
+                        if (chart && chart.data && chart.data.labels) {
+                          const newIndex = chart.data.labels.findIndex(label => label === clickedDateStr);
+                          if (newIndex !== -1) {
+                            // In breakdown mode, get the top of the stack (Held bar, dataset index 1)
+                            const datasetIndex = dataViewMode === 'breakdown' ? 1 : 0;
+                            const meta = chart.getDatasetMeta(datasetIndex);
+                            if (meta && meta.data && meta.data[newIndex]) {
+                              const bar = meta.data[newIndex];
+                              setClickIndicator({ x: bar.x, y: bar.y - 25, color: activeColor });
+                              setTimeout(() => setClickIndicator(null), 3000);
+                            }
+                          }
+                        }
+                      }, 800);
+                    }
+                  }
+                  // If month is selected but no week, find and select the week
+                  else if (selectedMonths.length > 0 && !selectedWeek) {
+                    const week = availableWeeks.find(w => clickedDateStr >= w.start && clickedDateStr <= w.end);
+                    if (week) {
+                      setSelectedWeek(week);
+                      // Show indicator after chart updates and animates
+                      setTimeout(() => {
+                        const chart = chartInstance.current;
+                        if (chart && chart.data && chart.data.labels) {
+                          const newIndex = chart.data.labels.findIndex(label => label === clickedDateStr);
+                          if (newIndex !== -1) {
+                            // In breakdown mode, get the top of the stack (Held bar, dataset index 1)
+                            const datasetIndex = dataViewMode === 'breakdown' ? 1 : 0;
+                            const meta = chart.getDatasetMeta(datasetIndex);
+                            if (meta && meta.data && meta.data[newIndex]) {
+                              const bar = meta.data[newIndex];
+                              setClickIndicator({ x: bar.x, y: bar.y - 25, color: activeColor });
+                              setTimeout(() => setClickIndicator(null), 3000);
+                            }
+                          }
+                        }
+                      }, 800);
+                    }
+                  }
+                }
+              },
               plugins: { 
                 legend: { display: dataViewMode === 'breakdown', position: 'top' },
                 tooltip: {
@@ -783,6 +863,18 @@ const DPKR_DATA = {
             </div>
             <div className="chart-wrapper">
               <canvas ref={chartRef}></canvas>
+              {clickIndicator && (
+                <div 
+                  className="click-indicator"
+                  style={{
+                    left: `${clickIndicator.x}px`,
+                    top: `${clickIndicator.y}px`,
+                    color: clickIndicator.color
+                  }}
+                >
+                  ▼
+                </div>
+              )}
             </div>
           </div>
         </div>
