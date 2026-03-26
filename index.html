@@ -99,6 +99,7 @@ const DPKR_DATA = {
       const [chartViewMode, setChartViewMode] = useState('daily');
       const [dataViewMode, setDataViewMode] = useState('total'); // 'total' or 'breakdown'
       const [selectedMonths, setSelectedMonths] = useState([]);
+      const [selectedWeek, setSelectedWeek] = useState(null);
       const chartRef = useRef(null);
       const chartInstance = useRef(null);
 
@@ -125,6 +126,13 @@ const DPKR_DATA = {
 
       const processed = useMemo(() => {
         return allProcessed.filter(row => {
+          // If a week is selected, only filter by week (ignore month boundaries)
+          if (selectedWeek) {
+            const rowDateStr = row.dateStr;
+            return rowDateStr >= selectedWeek.start && rowDateStr <= selectedWeek.end;
+          }
+          
+          // Otherwise, filter by month range
           if (selectedMonths.length > 0) {
             const rowMonth = row.date.getMonth();
             const rowYear = row.date.getFullYear();
@@ -135,9 +143,10 @@ const DPKR_DATA = {
               return false;
             }
           }
+          
           return true;
         });
-      }, [allProcessed, selectedMonths]);
+      }, [allProcessed, selectedMonths, selectedWeek]);
 
       const stats = useMemo(() => {
         const total = processed.reduce((s, r) => s + r.total, 0);
@@ -349,6 +358,56 @@ const DPKR_DATA = {
         return selectedMonths.some(m => m.value === monthValue);
       };
 
+      const availableWeeks = useMemo(() => {
+        if (selectedMonths.length === 0) return [];
+        
+        const sortedMonths = [...selectedMonths].sort((a, b) => a.value - b.value);
+        const minMonth = sortedMonths[0].value;
+        const maxMonth = sortedMonths[sortedMonths.length - 1].value;
+        
+        // Get all dates in the selected month range
+        const datesInRange = allProcessed.filter(row => {
+          const m = row.date.getMonth();
+          return m >= minMonth && m <= maxMonth;
+        });
+        
+        if (datesInRange.length === 0) return [];
+        
+        // Find the first Sunday on or before the first date
+        const firstDate = new Date(datesInRange[0].dateStr + 'T12:00:00');
+        const firstDayOfWeek = firstDate.getDay();
+        const firstSunday = new Date(firstDate);
+        firstSunday.setDate(firstDate.getDate() - firstDayOfWeek);
+        
+        // Find the last Saturday on or after the last date
+        const lastDate = new Date(datesInRange[datesInRange.length - 1].dateStr + 'T12:00:00');
+        const lastDayOfWeek = lastDate.getDay();
+        const lastSaturday = new Date(lastDate);
+        lastSaturday.setDate(lastDate.getDate() + (6 - lastDayOfWeek));
+        
+        // Generate weeks from first Sunday to last Saturday
+        const weeks = [];
+        let currentSunday = new Date(firstSunday);
+        let weekNum = 1;
+        
+        while (currentSunday <= lastSaturday) {
+          const weekStart = new Date(currentSunday);
+          const weekEnd = new Date(currentSunday);
+          weekEnd.setDate(weekEnd.getDate() + 6);
+          
+          const startStr = weekStart.toISOString().split('T')[0];
+          const endStr = weekEnd.toISOString().split('T')[0];
+          
+          const label = `Week ${weekNum}: ${weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+          weeks.push({ label, start: startStr, end: endStr, weekNum });
+          
+          weekNum++;
+          currentSunday.setDate(currentSunday.getDate() + 7);
+        }
+        
+        return weeks;
+      }, [selectedMonths, allProcessed]);
+
       const toggleMonth = (month) => {
         setSelectedMonths(prev => {
           const exists = prev.find(m => m.value === month.value);
@@ -358,6 +417,7 @@ const DPKR_DATA = {
             return [...prev, month].sort((a, b) => a.value - b.value);
           }
         });
+        setSelectedWeek(null); // Clear week when months change
       };
 
       const getMonthRangeLabel = () => {
@@ -369,6 +429,7 @@ const DPKR_DATA = {
 
       const clearFilters = () => {
         setSelectedMonths([]);
+        setSelectedWeek(null);
       };
 
       const formatDate = (dateStr) => {
@@ -412,6 +473,36 @@ const DPKR_DATA = {
                   );
                 })}
               </div>
+              
+              {availableWeeks.length > 0 && (
+                <div style={{ marginTop: '15px' }}>
+                  <label style={{ display: 'block', marginBottom: '6px' }}>Filter by Week (optional)</label>
+                  <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                    {availableWeeks.map(week => {
+                      const isSelected = selectedWeek?.weekNum === week.weekNum;
+                      return (
+                        <button
+                          key={week.weekNum}
+                          onClick={() => setSelectedWeek(isSelected ? null : week)}
+                          style={{
+                            padding: '6px 12px',
+                            border: isSelected ? `2px solid ${color}` : '1px solid #e2e8f0',
+                            background: isSelected ? color + '25' : '#fff',
+                            color: isSelected ? color : '#475569',
+                            borderRadius: '8px',
+                            cursor: 'pointer',
+                            fontSize: '0.85rem',
+                            fontWeight: isSelected ? '600' : '400',
+                            transition: 'all 0.2s'
+                          }}
+                        >
+                          {week.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
             {selectedMonths.length > 0 && (
               <button className="reset-btn" onClick={clearFilters}>
