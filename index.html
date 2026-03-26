@@ -8,6 +8,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-zoom/2.0.1/chartjs-plugin-zoom.min.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease; }
     body { 
@@ -293,6 +294,7 @@ const DPKR_DATA = {
       const [selectedMonths, setSelectedMonths] = useState([]);
       const [selectedWeek, setSelectedWeek] = useState(null);
       const [clickIndicator, setClickIndicator] = useState(null);
+      const [todayOnwardMode, setTodayOnwardMode] = useState(false);
       const chartRef = useRef(null);
       const chartInstance = useRef(null);
 
@@ -323,6 +325,19 @@ const DPKR_DATA = {
 
       const processed = useMemo(() => {
         return allProcessed.filter(row => {
+          // Only apply filters in daily view
+          if (chartViewMode !== 'daily') {
+            return true;
+          }
+          
+          // If Today Onward mode is active, filter to today and beyond
+          if (todayOnwardMode) {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const todayStr = today.toISOString().split('T')[0];
+            return row.dateStr >= todayStr;
+          }
+          
           // If a week is selected, only filter by week (ignore month boundaries)
           if (selectedWeek) {
             const rowDateStr = row.dateStr;
@@ -343,7 +358,12 @@ const DPKR_DATA = {
           
           return true;
         });
-      }, [allProcessed, selectedMonths, selectedWeek]);
+      }, [allProcessed, selectedMonths, selectedWeek, chartViewMode, todayOnwardMode]);
+
+      // Set initial scroll position to today when data changes
+      useEffect(() => {
+        // No need to track scroll position anymore
+      }, [processed, chartViewMode]);
 
       const stats = useMemo(() => {
         const total = processed.reduce((s, r) => s + r.total, 0);
@@ -473,6 +493,25 @@ const DPKR_DATA = {
               },
               plugins: { 
                 legend: { display: dataViewMode === 'breakdown', position: 'top' },
+                zoom: {
+                  pan: {
+                    enabled: true,
+                    mode: 'x',
+                    modifierKey: null
+                  },
+                  zoom: {
+                    wheel: {
+                      enabled: false
+                    },
+                    pinch: {
+                      enabled: true
+                    },
+                    mode: 'x'
+                  },
+                  limits: {
+                    x: { min: 0, max: processed.length - 1 }
+                  }
+                },
                 tooltip: {
                   callbacks: dataViewMode === 'breakdown' ? {
                     footer: function(context) {
@@ -487,7 +526,7 @@ const DPKR_DATA = {
                 x: {
                   stacked: dataViewMode === 'breakdown',
                   ticks: {
-                    maxTicksLimit: 12,
+                    maxTicksLimit: 20,
                     callback: function(v) {
                       return this.getLabelForValue(v).substring(5);
                     }
@@ -664,6 +703,8 @@ const DPKR_DATA = {
       }, [selectedMonths, allProcessed]);
 
       const toggleMonth = (month) => {
+        // Clicking a month disables Today Onward mode
+        setTodayOnwardMode(false);
         setSelectedMonths(prev => {
           const exists = prev.find(m => m.value === month.value);
           if (exists) {
@@ -876,6 +917,52 @@ const DPKR_DATA = {
                 </div>
               )}
             </div>
+            {chartViewMode === 'daily' && (
+              <div style={{ marginTop: '15px', display: 'flex', gap: '10px' }}>
+                <button
+                  onClick={() => {
+                    if (chartViewMode !== 'daily') return;
+                    // Enable Today Onward mode and clear other filters
+                    setTodayOnwardMode(true);
+                    setSelectedMonths([]);
+                    setSelectedWeek(null);
+                  }}
+                  style={{
+                    padding: '8px 16px',
+                    background: todayOnwardMode ? activeColor : inactiveBg,
+                    color: todayOnwardMode ? '#fff' : inactiveText,
+                    border: 'none',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    fontWeight: '600',
+                    fontSize: '0.9rem'
+                  }}
+                >
+                  Today Onward
+                </button>
+                <button
+                  onClick={() => {
+                    if (chartViewMode !== 'daily') return;
+                    // Clear all filters to show everything
+                    setTodayOnwardMode(false);
+                    setSelectedMonths([]);
+                    setSelectedWeek(null);
+                  }}
+                  style={{
+                    padding: '8px 16px',
+                    background: !todayOnwardMode && selectedMonths.length === 0 && !selectedWeek ? activeColor : inactiveBg,
+                    color: !todayOnwardMode && selectedMonths.length === 0 && !selectedWeek ? '#fff' : inactiveText,
+                    border: 'none',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    fontWeight: '600',
+                    fontSize: '0.9rem'
+                  }}
+                >
+                  All Time
+                </button>
+              </div>
+            )}
           </div>
         </div>
       );
