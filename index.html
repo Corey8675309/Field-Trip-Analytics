@@ -519,7 +519,7 @@ const DPKR_DATA = {
           };
         }
         chartInstance.current = new Chart(chartRef.current, config);
-      }, [processed, monthlyData, chartViewMode, dataViewMode, color, yAxisMax]);
+      }, [processed, monthlyData, chartViewMode, dataViewMode, activeColor, yAxisMax, darkMode]);
 
       const isMonthInRange = (monthValue) => {
         if (selectedMonths.length === 0) return false;
